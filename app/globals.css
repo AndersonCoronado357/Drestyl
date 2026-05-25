@@ -1,0 +1,61 @@
+@import "tailwindcss";
+
+/* Tokens de la paleta Drestyl.
+   Off-white #FAFAFA · Carbón #1A1A1A · Gris suave #E4E4E4 · Lila #7C5CFF */
+@theme {
+  --color-background: #FAFAFA;
+  --color-foreground: #1A1A1A;
+  --color-muted: #E4E4E4;
+  --color-muted-foreground: #6B6B6B;
+  --color-border: #E4E4E4;
+  --color-input: #E4E4E4;
+  --color-ring: #7C5CFF;
+  --color-accent: #7C5CFF;
+  --color-accent-foreground: #FFFFFF;
+  --color-primary: #7C5CFF;
+  --color-primary-foreground: #FFFFFF;
+  --color-destructive: #DC2626;
+  --color-destructive-foreground: #FFFFFF;
+
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+
+  --radius-sm: 0.5rem;
+  --radius: 0.75rem;
+  --radius-lg: 1rem;
+}
+
+html,
+body {
+  height: 100%;
+  background-color: var(--color-background);
+  color: var(--color-foreground);
+}
+
+body {
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* Botones / inputs nunca con outline azul nativo — usamos el lila como ring */
+:focus-visible {
+  outline: 2px solid var(--color-ring);
+  outline-offset: 2px;
+}
+
+/* Tap targets cómodos en móvil */
+button,
+a[role="button"],
+[role="tab"] {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Safe area helpers (iOS notch / home indicator) */
+@supports (padding: max(0px)) {
+  .pt-safe {
+    padding-top: max(env(safe-area-inset-top), 0px);
+  }
+  .pb-safe {
+    padding-bottom: max(env(safe-area-inset-bottom), 0px);
+  }
+}
