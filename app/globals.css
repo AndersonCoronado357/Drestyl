@@ -22,6 +22,79 @@
   --radius-sm: 0.5rem;
   --radius: 0.75rem;
   --radius-lg: 1rem;
+
+  /* Easing curves elegantes (expo-out: arranca rápido, frena con calma). */
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-out-soft: cubic-bezier(0.22, 1, 0.36, 1);
+
+  /* Animaciones reutilizables vía utilities animate-* de Tailwind v4. */
+  --animate-fade-up: fade-up 600ms var(--ease-out-expo) both;
+  --animate-fade-in: fade-in 500ms var(--ease-out-soft) both;
+}
+
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Lluvia diagonal: cada ícono atraviesa el panel desde la esquina
+   inferior-izquierda hasta la superior-derecha en bucle continuo.
+   La opacidad va de 0 → max → 0 para que el "snap" al reiniciar
+   sea invisible. El max-opacity se pasa por icono vía CSS variable. */
+@keyframes drestyl-rain {
+  0% {
+    transform: translate(-40vw, 40vh);
+    opacity: 0;
+  }
+  12% {
+    opacity: var(--icon-opacity, 0.22);
+  }
+  88% {
+    opacity: var(--icon-opacity, 0.22);
+  }
+  100% {
+    transform: translate(40vw, -40vh);
+    opacity: 0;
+  }
+}
+
+.icon-rain {
+  animation: drestyl-rain 40s linear infinite;
+  /* opacidad 0 fija mientras no haya animation-delay aplicado — evita
+     que se vean estáticos antes de arrancar. Los delays son negativos
+     en el TS, así que la animación siempre está "en progreso". */
+  opacity: 0;
+  will-change: transform, opacity;
+}
+
+/* Mask radial para los íconos del panel decorativo: opacidad 0 en el centro,
+   1 hacia los bordes — así el texto del centro siempre queda limpio. */
+.decor-icons-mask {
+  -webkit-mask-image: radial-gradient(
+    ellipse at center,
+    transparent 28%,
+    black 70%
+  );
+  mask-image: radial-gradient(
+    ellipse at center,
+    transparent 28%,
+    black 70%
+  );
 }
 
 html,
@@ -37,17 +110,14 @@ body {
   text-rendering: optimizeLegibility;
 }
 
-/* Botones / inputs nunca con outline azul nativo — usamos el lila como ring */
-:focus-visible {
-  outline: 2px solid var(--color-ring);
-  outline-offset: 2px;
+/* Quitamos el outline azul del navegador. Cada control define su propio focus
+   visible con ring/border de Tailwind para que se sienta coherente. */
+* {
+  -webkit-tap-highlight-color: transparent;
 }
 
-/* Tap targets cómodos en móvil */
-button,
-a[role="button"],
-[role="tab"] {
-  -webkit-tap-highlight-color: transparent;
+:focus {
+  outline: none;
 }
 
 /* Safe area helpers (iOS notch / home indicator) */
