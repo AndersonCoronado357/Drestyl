@@ -52,34 +52,70 @@
   }
 }
 
-/* Lluvia diagonal: cada ícono atraviesa el panel desde la esquina
-   inferior-izquierda hasta la superior-derecha en bucle continuo.
-   La opacidad va de 0 → max → 0 para que el "snap" al reiniciar
-   sea invisible. El max-opacity se pasa por icono vía CSS variable. */
+/* Lluvia diagonal: cada ícono cruza el panel SW → NE en bucle continuo.
+   Translate más corto (±35vw/vh) para que cada ícono pase más tiempo en
+   el panel y la densidad se sienta uniforme, no como una franja estrecha.
+   Opacidad solo cae al inicio/fin del ciclo para que el reset sea invisible. */
 @keyframes drestyl-rain {
   0% {
-    transform: translate(-40vw, 40vh);
+    transform: translate(-35vw, 35vh);
     opacity: 0;
   }
-  12% {
+  10% {
     opacity: var(--icon-opacity, 0.22);
   }
-  88% {
+  90% {
     opacity: var(--icon-opacity, 0.22);
   }
   100% {
-    transform: translate(40vw, -40vh);
+    transform: translate(35vw, -35vh);
     opacity: 0;
   }
 }
 
 .icon-rain {
-  animation: drestyl-rain 40s linear infinite;
-  /* opacidad 0 fija mientras no haya animation-delay aplicado — evita
-     que se vean estáticos antes de arrancar. Los delays son negativos
-     en el TS, así que la animación siempre está "en progreso". */
+  animation: drestyl-rain 32s linear infinite;
+  /* Opacidad 0 fija de base. Los delays son negativos en el TS, así la
+     animación siempre arranca "en progreso" y no quedan íconos quietos. */
   opacity: 0;
   will-change: transform, opacity;
+}
+
+/* Selector de género (signup + ajustes): radio nativo invisible + un pill
+   absoluto que se desliza al chip activo. Sin React state, sin onClick.
+   Los chips comparten fondo lila claro; el pill lila sólido se mueve encima. */
+.gp-chip {
+  background-color: rgba(124, 92, 255, 0.08);
+  color: #6b6b6b;
+  transition: color 200ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+.gender-picker input[type="radio"]:checked + .gp-chip {
+  color: #ffffff;
+}
+
+/* Pill que se desliza. Está fuera del grid (es hermano del row de chips)
+   para que no consuma un slot y no empuje Mixto a la segunda fila. */
+.gp-pill {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: calc((100% - 1rem) / 3);
+  background-color: #7c5cff;
+  border-radius: 0.75rem;
+  transform: translateX(0);
+  transition: transform 320ms cubic-bezier(0.4, 0, 0.2, 1);
+  pointer-events: none;
+  z-index: 0;
+}
+.gender-picker:has(input[value="masculino"]:checked) .gp-pill {
+  transform: translateX(0);
+}
+.gender-picker:has(input[value="femenino"]:checked) .gp-pill {
+  transform: translateX(calc(100% + 0.5rem));
+}
+.gender-picker:has(input[value="mixto"]:checked) .gp-pill {
+  transform: translateX(calc(200% + 1rem));
 }
 
 /* Mask radial para los íconos del panel decorativo: opacidad 0 en el centro,

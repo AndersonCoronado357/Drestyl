@@ -1,6 +1,9 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { LogoutButton } from "@/components/auth/logout-button";
+import { GenderForm } from "@/components/settings/gender-form";
+import type { GenderSlug } from "@/lib/gender";
+import { isValidGender } from "@/lib/gender";
 
 export default async function AjustesPage() {
   const supabase = await createClient();
@@ -14,13 +17,16 @@ export default async function AjustesPage() {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("display_name")
+    .select("display_name, gender")
     .eq("id", user.id)
     .maybeSingle();
 
   const displayName =
     profile?.display_name?.trim() ||
     (user.email ? user.email.split("@")[0] : "Tu cuenta");
+
+  const gender: GenderSlug =
+    profile && isValidGender(profile.gender) ? profile.gender : "mixto";
 
   return (
     <section className="pt-8">
@@ -32,11 +38,9 @@ export default async function AjustesPage() {
         <p className="mt-1 text-sm text-muted-foreground">{user.email}</p>
       </header>
 
-      <div className="space-y-3">
-        <div className="rounded-xl border border-border bg-background p-6">
-          <p className="text-sm text-muted-foreground">
-            Tu perfil, ubicación por defecto y opciones se verán aquí.
-          </p>
+      <div className="space-y-6">
+        <div className="rounded-xl border border-border bg-background p-5">
+          <GenderForm initial={gender} />
         </div>
 
         <LogoutButton />

@@ -39,3 +39,10 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# docs locales que no van al repo
+AGENTS.md
+CLAUDE.md
+
+# config local de Claude Code (paths específicos por máquina)
+.claude/

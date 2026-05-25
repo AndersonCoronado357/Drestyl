@@ -12,38 +12,39 @@ type IconSpec = {
   shape: Shape;
 };
 
-const ANIM_DURATION_S = 40;
-const ICON_COLS = 5;
-const ICON_ROWS = 6;
+const ANIM_DURATION_S = 32;
+const ICON_COLS = 6;
+const ICON_ROWS = 8;
 const SHAPES: Shape[] = ["shirt", "pants", "jacket", "shoe"];
 
-// Grid pseudo-aleatorio: una grilla 5×6 con jitter por celda para que no
-// parezca alineada.
-//
-// Los delays se reparten NEGATIVOS a lo largo del ciclo (de 0 a -duración).
-// Un delay negativo le dice al browser "esta animación ya empezó hace X
-// segundos", así desde el primer frame hay íconos en todas las etapas del
-// ciclo: algunos entrando (transparentes), otros en medio (visibles), otros
-// saliendo (transparentes). Sin esto, todos los íconos arrancarían quietos
-// en su posición default hasta que cumpliera su delay positivo.
+// Grid pseudo-aleatorio: 6×8 = 48 íconos. Las posiciones se distribuyen
+// de -10% a 110% para que siempre haya íconos entrando por SW y saliendo
+// por NE. La fase del cycle (delay) se descorrelaciona de la posición con
+// una permutación (i*23 mod 48) — sin esto, íconos vecinos en el grid
+// tenían fases vecinas en el cycle y se veían como una banda que avanza.
+// Con descorrelación, en cualquier instante hay íconos repartidos por
+// todo el panel en distintas fases.
 const FLOATING_ICONS: IconSpec[] = (() => {
   const list: IconSpec[] = [];
-  const total = ICON_COLS * ICON_ROWS;
+  const total = ICON_COLS * ICON_ROWS; // 48
+  const SHUFFLE = 23; // primo coprimo con 48 → permutación completa
+  const SPAN = 120;
+  const OFFSET = -10;
   for (let r = 0; r < ICON_ROWS; r++) {
     for (let c = 0; c < ICON_COLS; c++) {
       const i = r * ICON_COLS + c;
-      const baseLeft = (c + 0.5) * (100 / ICON_COLS);
-      const baseTop = (r + 0.5) * (100 / ICON_ROWS);
-      // jitter determinístico basado en el índice (no usamos Math.random
-      // para que SSR y CSR coincidan).
-      const jitterX = (((i * 7919) % 100) / 100) * 14 - 7;
-      const jitterY = (((i * 1297) % 100) / 100) * 14 - 7;
+      const baseLeft = OFFSET + (c + 0.5) * (SPAN / ICON_COLS);
+      const baseTop = OFFSET + (r + 0.5) * (SPAN / ICON_ROWS);
+      const jitterX = (((i * 7919) % 100) / 100) * 10 - 5;
+      const jitterY = (((i * 1297) % 100) / 100) * 10 - 5;
+      // Fase de este ícono en el cycle: descorrelacionada de su posición.
+      const phaseIdx = (i * SHUFFLE) % total;
       list.push({
         left: `${baseLeft + jitterX}%`,
         top: `${baseTop + jitterY}%`,
         size: 5 + (i % 3),
         opacity: 0.18 + (i % 3) * 0.04,
-        delay: -((i / total) * ANIM_DURATION_S),
+        delay: -((phaseIdx / total) * ANIM_DURATION_S),
         shape: SHAPES[i % SHAPES.length],
       });
     }

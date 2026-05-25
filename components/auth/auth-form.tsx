@@ -10,11 +10,12 @@ import {
 } from "@/app/actions/auth";
 import { GoogleIcon } from "./google-icon";
 import { PasswordInput } from "./password-input";
+import { GenderPicker } from "./gender-picker";
 
 type Mode = "login" | "signup";
 
 const inputClass =
-  "w-full rounded-xl border border-transparent bg-accent/8 px-4 py-3 text-base text-foreground placeholder:text-muted-foreground/60";
+  "w-full rounded-xl border border-transparent bg-accent/8 px-4 py-2.5 text-base text-foreground placeholder:text-muted-foreground/60";
 
 export function AuthForm({ mode }: { mode: Mode }) {
   const action = mode === "login" ? login : signup;
@@ -25,9 +26,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
 
   const title = mode === "login" ? "Bienvenido de vuelta" : "Crea tu cuenta";
   const subtitle =
-    mode === "login"
-      ? "Entra para ver tu outfit de hoy."
-      : "Empieza a organizar tu clóset.";
+    mode === "login" ? "Entra para ver tu outfit de hoy." : null;
   const submitLabel = mode === "login" ? "Entrar" : "Crear cuenta";
   const altHref = mode === "login" ? "/signup" : "/login";
   const altPrefix =
@@ -50,37 +49,43 @@ export function AuthForm({ mode }: { mode: Mode }) {
       </div>
 
       <header
-        className="mb-6 animate-fade-up"
+        className="mb-4 animate-fade-up"
         style={{ animationDelay: "70ms" }}
       >
-        <h1 className="text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
+        <h1 className="text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
           {title}
         </h1>
-        <p className="mt-1 text-base text-muted-foreground">{subtitle}</p>
+        {subtitle && (
+          <p className="mt-1 text-sm text-muted-foreground">{subtitle}</p>
+        )}
       </header>
 
       <form
         action={formAction}
-        className="animate-fade-up space-y-3.5"
+        className="animate-fade-up space-y-3"
         style={{ animationDelay: "140ms" }}
       >
         {mode === "signup" && (
-          <div className="space-y-1.5">
-            <label
-              htmlFor="display_name"
-              className="block text-sm font-medium text-foreground"
-            >
-              Tu nombre
-            </label>
-            <input
-              id="display_name"
-              name="display_name"
-              type="text"
-              autoComplete="name"
-              placeholder="Cómo te llamas"
-              className={inputClass}
-            />
-          </div>
+          <>
+            <div className="space-y-1.5">
+              <label
+                htmlFor="display_name"
+                className="block text-sm font-medium text-foreground"
+              >
+                Tu nombre
+              </label>
+              <input
+                id="display_name"
+                name="display_name"
+                type="text"
+                autoComplete="name"
+                placeholder="Cómo te llamas"
+                className={inputClass}
+              />
+            </div>
+
+            <GenderPicker name="gender" />
+          </>
         )}
 
         <div className="space-y-1.5">
@@ -152,7 +157,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
         <button
           type="submit"
           disabled={pending}
-          className="mt-1 h-12 w-full rounded-xl bg-primary text-base font-semibold text-primary-foreground transition-transform active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50"
+          className="mt-0.5 h-11 w-full rounded-xl bg-primary text-base font-semibold text-primary-foreground transition-transform active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50"
         >
           {pending ? "Un momento…" : submitLabel}
         </button>
@@ -160,7 +165,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
 
       {/* Separador "o" */}
       <div
-        className="my-4 flex animate-fade-up items-center gap-3"
+        className="my-3 flex animate-fade-up items-center gap-3"
         style={{ animationDelay: "210ms" }}
       >
         <span className="h-px flex-1 bg-border" />
@@ -178,7 +183,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
       >
         <button
           type="submit"
-          className="flex h-12 w-full items-center justify-center gap-3 rounded-xl border border-border bg-background text-base font-medium text-foreground transition-transform active:scale-[0.99]"
+          className="flex h-11 w-full items-center justify-center gap-3 rounded-xl border border-border bg-background text-base font-medium text-foreground transition-transform active:scale-[0.99]"
         >
           <GoogleIcon />
           Continuar con Google
@@ -186,7 +191,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
       </form>
 
       <p
-        className="mt-5 animate-fade-up text-center text-sm text-muted-foreground"
+        className="mt-4 animate-fade-up text-center text-sm text-muted-foreground"
         style={{ animationDelay: "350ms" }}
       >
         {altPrefix}{" "}

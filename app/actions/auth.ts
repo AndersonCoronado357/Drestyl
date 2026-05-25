@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { isValidGender, type GenderSlug } from "@/lib/gender";
 
 export type AuthState =
   | { error?: string; info?: string }
@@ -78,6 +79,8 @@ export async function signup(
   const email = String(formData.get("email") ?? "").trim().toLowerCase();
   const password = String(formData.get("password") ?? "");
   const displayName = String(formData.get("display_name") ?? "").trim();
+  const rawGender = String(formData.get("gender") ?? "").trim();
+  const gender: GenderSlug = isValidGender(rawGender) ? rawGender : "mixto";
 
   if (!email || !password) {
     return { error: "Ingresa tu correo y una contraseña." };
@@ -97,7 +100,10 @@ export async function signup(
     email,
     password,
     options: {
-      data: { display_name: displayName || null },
+      data: {
+        display_name: displayName || null,
+        gender,
+      },
     },
   });
 
