@@ -1,21 +1,33 @@
-export default function HoyPage() {
-  return (
-    <section className="pt-8">
-      <header className="mb-8">
-        <p className="text-sm text-muted-foreground">Hoy</p>
-        <h1 className="mt-1 text-3xl font-semibold tracking-tight">
-          Buenos días
-        </h1>
-      </header>
+import { redirect } from "next/navigation";
+import { createClient } from "@/lib/supabase/server";
+import { TodayView } from "@/components/today/today-view";
 
-      <div className="rounded-xl border border-border bg-background p-6">
-        <p className="text-sm text-muted-foreground">
-          Esta pantalla mostrará el clima de tu ubicación y tu outfit del día.
-        </p>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Por ahora es solo un placeholder de la Fase 0.
-        </p>
-      </div>
-    </section>
-  );
+export default async function HoyPage() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    redirect("/login");
+  }
+
+  const [profileRes, countRes] = await Promise.all([
+    supabase
+      .from("profiles")
+      .select("display_name")
+      .eq("id", user.id)
+      .maybeSingle(),
+    supabase
+      .from("garments")
+      .select("id", { count: "exact", head: true })
+      .eq("is_active", true),
+  ]);
+
+  const displayName =
+    profileRes.data?.display_name?.trim() ||
+    (user.email ? user.email.split("@")[0] : "tú");
+
+  const activeGarments = countRes.count ?? 0;
+
+  return <TodayView displayName={displayName} activeGarments={activeGarments} />;
 }

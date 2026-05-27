@@ -45,7 +45,7 @@ export function ClosetGrid({
   return (
     <>
       {/* Header — siempre tipo "Mi clóset / título / subtitle" */}
-      <header className="mb-6 flex items-start justify-between gap-3 animate-fade-in">
+      <header className="mb-6 flex items-center justify-between gap-3 animate-fade-in">
         <div className="min-w-0 flex-1">
           <p className="text-sm text-muted-foreground">Mi clóset</p>
           {isOverview ? (
