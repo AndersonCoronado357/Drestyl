@@ -1,19 +1,23 @@
-import Link from "next/link";
+"use client";
+
 import type { Garment } from "@/lib/garments";
 import { getCategoryLabel } from "@/lib/categories";
+import { CategoryIcon } from "@/components/closet/category-icon";
 
 type Props = {
   garment: Garment;
   photoUrl: string | undefined;
+  onClick: () => void;
 };
 
-export function GarmentCard({ garment, photoUrl }: Props) {
+export function GarmentCard({ garment, photoUrl, onClick }: Props) {
   const label = garment.name?.trim() || getCategoryLabel(garment.category);
 
   return (
-    <Link
-      href={`/closet/${garment.id}`}
-      className="group block overflow-hidden rounded-xl border border-border bg-background"
+    <button
+      type="button"
+      onClick={onClick}
+      className="group block w-full overflow-hidden rounded-xl bg-accent/5 text-left transition-all hover:bg-accent/10 hover:-translate-y-0.5"
     >
       <div className="relative aspect-square bg-accent/5">
         {photoUrl ? (
@@ -28,6 +32,18 @@ export function GarmentCard({ garment, photoUrl }: Props) {
           <div className="grid size-full place-items-center text-xs text-muted-foreground">
             Sin foto
           </div>
+        )}
+
+        <span className="absolute left-2 top-2 flex size-7 items-center justify-center rounded-full bg-background/85 text-accent backdrop-blur-sm">
+          <CategoryIcon slug={garment.category} size={16} />
+        </span>
+
+        {!garment.bg_cleaned && (
+          <span
+            className="absolute bottom-2 right-2 size-2 rounded-full bg-accent/70"
+            aria-label="Procesando fondo"
+            title="Limpiando fondo en background"
+          />
         )}
 
         {!garment.is_active && (
@@ -45,6 +61,6 @@ export function GarmentCard({ garment, photoUrl }: Props) {
           {getCategoryLabel(garment.category)}
         </p>
       </div>
-    </Link>
+    </button>
   );
 }

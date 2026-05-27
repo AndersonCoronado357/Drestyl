@@ -11,9 +11,10 @@ type Props = {
   placeholder?: string;
 };
 
-const fieldClass =
-  "w-full rounded-xl border border-transparent bg-accent/8 py-3 pl-4 pr-12 text-base text-foreground placeholder:text-muted-foreground/60";
-
+// Toggle con useState alternando el `type` del input. Más confiable en mobile
+// que el truco CSS con `:has()` + `-webkit-text-security` (que falla en
+// Firefox Android y browsers viejos). Como bonus, type="password" deja que el
+// navegador ofrezca guardar la contraseña.
 export function PasswordInput({
   id,
   name,
@@ -22,53 +23,42 @@ export function PasswordInput({
   minLength,
   placeholder,
 }: Props) {
-  const [show, setShow] = useState(false);
-
+  const [visible, setVisible] = useState(false);
   return (
-    <div className="relative">
+    <div className="flex items-center rounded-xl bg-accent/8 pr-1">
       <input
         id={id}
         name={name}
-        type={show ? "text" : "password"}
+        type={visible ? "text" : "password"}
         autoComplete={autoComplete}
+        autoCapitalize="off"
+        autoCorrect="off"
+        spellCheck={false}
         required={required}
         minLength={minLength}
         placeholder={placeholder}
-        className={fieldClass}
+        className="min-w-0 flex-1 bg-transparent py-3 pl-4 pr-2 text-base text-foreground placeholder:text-muted-foreground/60 outline-none"
       />
       <button
         type="button"
-        onClick={() => setShow((s) => !s)}
-        aria-label={show ? "Ocultar contraseña" : "Mostrar contraseña"}
-        aria-pressed={show}
-        tabIndex={-1}
-        className="absolute right-1.5 top-1/2 flex size-9 -translate-y-1/2 items-center justify-center rounded-lg text-muted-foreground transition-transform active:scale-90"
+        onClick={() => setVisible((v) => !v)}
+        onTouchEnd={(e) => {
+          // Algunos browsers móviles tragan el `click` cuando hay scroll/zoom
+          // en curso. `touchend` garantiza que el toggle reacciona al tap.
+          e.preventDefault();
+          setVisible((v) => !v);
+        }}
+        aria-label={visible ? "Ocultar contraseña" : "Mostrar contraseña"}
+        aria-pressed={visible}
+        className="flex size-11 shrink-0 items-center justify-center rounded-lg text-muted-foreground"
       >
-        {/* Dos íconos superpuestos con crossfade + escala + rotación */}
-        <span className="relative grid size-5 place-items-center">
-          <EyeIcon
-            className={[
-              "absolute inset-0 transition-all duration-200 ease-out",
-              show
-                ? "scale-50 rotate-12 opacity-0"
-                : "scale-100 rotate-0 opacity-100",
-            ].join(" ")}
-          />
-          <EyeOffIcon
-            className={[
-              "absolute inset-0 transition-all duration-200 ease-out",
-              show
-                ? "scale-100 rotate-0 opacity-100"
-                : "scale-50 -rotate-12 opacity-0",
-            ].join(" ")}
-          />
-        </span>
+        {visible ? <EyeOffIcon /> : <EyeIcon />}
       </button>
     </div>
   );
 }
 
-function EyeIcon({ className }: { className?: string }) {
+function EyeIcon() {
   return (
     <svg
       viewBox="0 0 24 24"
@@ -80,7 +70,6 @@ function EyeIcon({ className }: { className?: string }) {
       strokeLinecap="round"
       strokeLinejoin="round"
       aria-hidden="true"
-      className={className}
     >
       <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z" />
       <circle cx="12" cy="12" r="3" />
@@ -88,7 +77,7 @@ function EyeIcon({ className }: { className?: string }) {
   );
 }
 
-function EyeOffIcon({ className }: { className?: string }) {
+function EyeOffIcon() {
   return (
     <svg
       viewBox="0 0 24 24"
@@ -100,9 +89,7 @@ function EyeOffIcon({ className }: { className?: string }) {
       strokeLinecap="round"
       strokeLinejoin="round"
       aria-hidden="true"
-      className={className}
     >
-      {/* Mismo ojo completo + línea diagonal encima */}
       <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z" />
       <circle cx="12" cy="12" r="3" />
       <line x1="3" y1="3" x2="21" y2="21" />

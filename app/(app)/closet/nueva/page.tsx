@@ -1,26 +1,17 @@
-import Link from "next/link";
+import { redirect } from "next/navigation";
+import { createClient } from "@/lib/supabase/server";
+import { AddGarmentFlow } from "@/components/closet/add-garment-flow";
 
-export default function NuevaPrendaPage() {
-  return (
-    <section className="pt-8">
-      <header className="mb-6">
-        <Link
-          href="/closet"
-          className="text-sm font-medium text-accent"
-        >
-          ← Mi clóset
-        </Link>
-        <h1 className="mt-3 text-3xl font-semibold tracking-tight">
-          Agregar prenda
-        </h1>
-      </header>
+export default async function NuevaPrendaPage() {
+  // Defensa en profundidad: el proxy ya redirige sin sesión, pero validamos
+  // también aquí porque el server action necesita un user real.
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    redirect("/login");
+  }
 
-      <div className="rounded-xl border border-border bg-background p-8 text-center">
-        <p className="text-base text-muted-foreground">
-          El flujo para agregar prendas (foto, procesamiento, categoría) llega
-          en el siguiente paso.
-        </p>
-      </div>
-    </section>
-  );
+  return <AddGarmentFlow />;
 }

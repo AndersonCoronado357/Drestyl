@@ -8,32 +8,27 @@ export const CATEGORIES = [
   {
     slug: "superior",
     label: "Prenda superior",
-    hint: "camisetas, camisas, polos, blusas, esqueletos",
+    hint: "Camisetas, camisas, polos y blusas",
   },
   {
     slug: "sobreprenda",
     label: "Sobre la prenda",
-    hint: "chaquetas, blazers, abrigos, sudaderas con cierre, cárdiganes",
+    hint: "Chaquetas, hoodies, blazers y abrigos",
   },
   {
     slug: "inferior",
     label: "Prenda inferior",
-    hint: "pantalones, jeans, shorts, faldas, bermudas",
+    hint: "Pantalones, jeans, pantalonetas y faldas",
   },
   {
     slug: "calzado",
     label: "Zapatos",
-    hint: "tenis, formales, sandalias, botas",
+    hint: "Tenis, botas, sandalias y formales",
   },
   {
     slug: "accesorio",
     label: "Accesorios",
-    hint: "gorras, sombreros, bufandas, cinturones, gafas",
-  },
-  {
-    slug: "joyeria",
-    label: "Joyería y reloj",
-    hint: "anillos, cadenas, aretes, relojes, pulseras",
+    hint: "Gorras, correas, gafas, bolsos y joyería",
   },
 ] as const;
 

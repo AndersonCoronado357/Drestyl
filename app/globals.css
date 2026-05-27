@@ -14,7 +14,9 @@
   --color-accent-foreground: #FFFFFF;
   --color-primary: #7C5CFF;
   --color-primary-foreground: #FFFFFF;
-  --color-destructive: #DC2626;
+  /* "destructive" suave que armoniza con la app (lila desaturado en vez
+     de rojo genérico). Para acciones como descartar, eliminar, cerrar sesión. */
+  --color-destructive: #9b88c4;
   --color-destructive-foreground: #FFFFFF;
 
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
@@ -30,6 +32,9 @@
   /* Animaciones reutilizables vía utilities animate-* de Tailwind v4. */
   --animate-fade-up: fade-up 600ms var(--ease-out-expo) both;
   --animate-fade-in: fade-in 500ms var(--ease-out-soft) both;
+  --animate-scale-in: scale-in 350ms var(--ease-out-expo) both;
+  --animate-slide-left: slide-left 400ms var(--ease-out-expo) both;
+  --animate-slide-right: slide-right 400ms var(--ease-out-expo) both;
 }
 
 @keyframes fade-up {
@@ -51,6 +56,44 @@
     opacity: 1;
   }
 }
+
+@keyframes scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.94);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes slide-left {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slide-right {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Loader del logo (procesando): logo D estático sin animación, las barras
+   de progreso son el indicador de actividad.
+   La animación de la cometa del TshirtLoader (cuando guarda) está inline
+   en components/ui/tshirt-loader.tsx para no depender de Tailwind/Lightning. */
 
 /* Lluvia diagonal: cada ícono cruza el panel SW → NE en bucle continuo.
    Translate más corto (±35vw/vh) para que cada ícono pase más tiempo en
@@ -81,15 +124,23 @@
   will-change: transform, opacity;
 }
 
-/* Selector de género (signup + ajustes): radio nativo invisible + un pill
-   absoluto que se desliza al chip activo. Sin React state, sin onClick.
-   Los chips comparten fondo lila claro; el pill lila sólido se mueve encima. */
+/* Chips de selector (género, categoría, etc.): radio nativo invisible + label
+   coloreado vía CSS sibling. .gp-chip es el "look" base; cada picker decide
+   cómo se ve el activo. */
 .gp-chip {
   background-color: rgba(124, 92, 255, 0.08);
   color: #6b6b6b;
-  transition: color 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  transition:
+    background-color 280ms cubic-bezier(0.4, 0, 0.2, 1),
+    color 200ms cubic-bezier(0.4, 0, 0.2, 1);
 }
+/* Género: solo cambia color (el pill lila se desliza por encima). */
 .gender-picker input[type="radio"]:checked + .gp-chip {
+  color: #ffffff;
+}
+/* Categoría: cada chip activo se rellena de lila sólido (sin pill). */
+.category-picker input[type="radio"]:checked + .gp-chip {
+  background-color: #7c5cff;
   color: #ffffff;
 }
 
@@ -154,6 +205,23 @@ body {
 
 :focus {
   outline: none;
+}
+
+/* Scrollbar — solución definitiva. Ocultamos COMPLETAMENTE el scrollbar
+   nativo (Chrome, Firefox, Safari). El scroll sigue funcionando con
+   rueda/touch. Sin barra visible = sin flechas = imposible que aparezcan.
+   El espacio que ocupaba el scrollbar lo recuperamos. */
+* {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE/Edge legacy */
+}
+*::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+.custom-scroll {
+  scrollbar-width: none;
 }
 
 /* Safe area helpers (iOS notch / home indicator) */
