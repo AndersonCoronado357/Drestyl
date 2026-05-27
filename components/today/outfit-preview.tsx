@@ -10,6 +10,22 @@ type Props = {
   garments: Garment[];
   photoUrls: Record<string, string | null>;
   totalActive: number;
+  /** Reasoning de la IA. Si está vacío, se muestra un placeholder neutro. */
+  reasoning?: string;
+  /** Callback para regenerar el outfit. Si no se pasa, el botón no aparece. */
+  onRegenerate?: () => void;
+  /** Indica si el regenerate está en curso (mostrar estado pending). */
+  regenerating?: boolean;
+  /** Cuántas regeneraciones quedan. Cuando llega a 0, el botón se deshabilita
+   *  y aparece un mensaje. Default: Infinity (sin límite). */
+  regenerationsLeft?: number;
+  /** Callback de "Usar este outfit". Si no se pasa, el botón queda disabled. */
+  onUse?: () => void;
+  /** Indica si el "Usar" está en curso (mostrar pending). */
+  using?: boolean;
+  /** Mensaje de error del último intento de guardar. Si hay, se muestra
+   *  debajo del botón "Usar". */
+  useError?: string | null;
 };
 
 /**
@@ -25,7 +41,18 @@ type Props = {
  *
  * Scrollbars ocultos (reset global).
  */
-export function OutfitPreview({ garments, photoUrls, totalActive }: Props) {
+export function OutfitPreview({
+  garments,
+  photoUrls,
+  totalActive,
+  reasoning,
+  onRegenerate,
+  regenerating = false,
+  regenerationsLeft = Infinity,
+  onUse,
+  using = false,
+  useError = null,
+}: Props) {
   const router = useRouter();
 
   if (totalActive === 0) {
@@ -78,10 +105,8 @@ export function OutfitPreview({ garments, photoUrls, totalActive }: Props) {
         <span className="h-9 w-[4.5rem]" aria-hidden />
       </header>
 
-      {/* FIJO: Por qué este outfit — placeholder hasta Fase 4 (la IA
-          generará el reasoning real al elegir). No usamos la ocasión
-          del usuario aquí: la IA la consumirá directamente cuando arme
-          el outfit y entregará su propio mensaje. */}
+      {/* FIJO: Por qué este outfit — texto de la IA cuando llega, placeholder
+          si todavía no respondió o si se cayó al fallback. */}
       <div className="mb-4 shrink-0 rounded-2xl bg-accent/8 px-4 py-3">
         <div className="mb-1 flex items-center gap-2">
           <span className="grid size-5 place-items-center rounded-full bg-accent text-accent-foreground">
@@ -91,10 +116,11 @@ export function OutfitPreview({ garments, photoUrls, totalActive }: Props) {
             Por qué este outfit
           </p>
         </div>
-        <p className="text-xs leading-relaxed text-muted-foreground">
-          Combinación armada con prendas activas de tu clóset. Cuando la IA
-          se conecte va a explicarte aquí por qué eligió este outfit según
-          tu clima y plan del día.
+        <p
+          className={`text-xs leading-relaxed ${reasoning ? "text-foreground" : "text-muted-foreground"}`}
+        >
+          {reasoning ||
+            "Combinación armada con prendas activas de tu clóset."}
         </p>
       </div>
 
@@ -107,12 +133,19 @@ export function OutfitPreview({ garments, photoUrls, totalActive }: Props) {
               key={g.id}
               garment={g}
               photoUrl={photoUrls[g.id] ?? undefined}
-              onClick={() => router.push(`/closet/${g.id}`)}
+              onClick={() => router.push(`/sugerencia/cambiar/${g.id}`)}
             />
           ))}
         </div>
         <div className="mt-5 pb-2">
-          <Actions onRefresh={() => router.refresh()} />
+          <Actions
+            onRefresh={onRegenerate ?? (() => router.refresh())}
+            regenerating={regenerating}
+            regenerationsLeft={regenerationsLeft}
+            onUse={onUse}
+            using={using}
+            useError={useError}
+          />
         </div>
       </div>
 
@@ -124,47 +157,89 @@ export function OutfitPreview({ garments, photoUrls, totalActive }: Props) {
               key={g.id}
               garment={g}
               photoUrl={photoUrls[g.id]}
-              onTap={() => router.push(`/closet/${g.id}`)}
+              onTap={() => router.push(`/sugerencia/cambiar/${g.id}`)}
             />
           ))}
         </div>
         <div className="shrink-0">
-          <Actions onRefresh={() => router.refresh()} />
+          <Actions
+            onRefresh={onRegenerate ?? (() => router.refresh())}
+            regenerating={regenerating}
+            regenerationsLeft={regenerationsLeft}
+            onUse={onUse}
+            using={using}
+            useError={useError}
+          />
         </div>
       </div>
     </section>
   );
 }
 
-function Actions({ onRefresh }: { onRefresh: () => void }) {
+function Actions({
+  onRefresh,
+  regenerating,
+  regenerationsLeft,
+  onUse,
+  using,
+  useError,
+}: {
+  onRefresh: () => void;
+  regenerating: boolean;
+  regenerationsLeft: number;
+  onUse?: () => void;
+  using: boolean;
+  useError: string | null;
+}) {
+  const exhausted = regenerationsLeft <= 0;
+  const showCount = regenerationsLeft !== Infinity && !exhausted;
+  const canUse = !!onUse && !using && !regenerating;
+
   return (
     <div className="space-y-2">
       <button
         type="button"
-        disabled
-        title="Disponible cuando la IA esté activa"
-        className="h-12 w-full rounded-2xl bg-primary text-base font-semibold text-primary-foreground transition-colors disabled:opacity-40"
+        onClick={onUse}
+        disabled={!canUse}
+        className="h-12 w-full rounded-2xl bg-primary text-base font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-40"
       >
-        Usar
+        {using ? "Guardando…" : "Usar"}
       </button>
+      {useError && (
+        <p className="text-center text-[11px] text-destructive">{useError}</p>
+      )}
       <div className="grid grid-cols-2 gap-2">
-        <button
-          type="button"
-          disabled
-          title="Disponible cuando la IA esté activa"
-          className="h-10 rounded-2xl bg-accent/8 text-sm font-medium text-foreground transition-colors hover:bg-accent/15 disabled:opacity-40"
+        <Link
+          href="/sugerencia/agregar"
+          className="h-10 inline-flex items-center justify-center gap-1.5 rounded-2xl bg-accent/8 text-sm font-medium text-foreground transition-colors hover:bg-accent/15"
         >
-          Cambiar pieza
-        </button>
+          <PlusIcon />
+          Agregar
+        </Link>
         <button
           type="button"
           onClick={onRefresh}
-          className="h-10 inline-flex items-center justify-center gap-1.5 rounded-2xl bg-accent/8 text-sm font-medium text-foreground transition-colors hover:bg-accent/15"
+          disabled={regenerating || exhausted || using}
+          title={
+            exhausted
+              ? "Llegaste al máximo de regeneraciones"
+              : undefined
+          }
+          className="h-10 inline-flex items-center justify-center gap-1.5 rounded-2xl bg-accent/8 text-sm font-medium text-foreground transition-colors hover:bg-accent/15 disabled:opacity-40"
         >
-          <RefreshIcon />
-          Regenerar
+          <RefreshIcon spinning={regenerating} />
+          {regenerating
+            ? "Pensando…"
+            : showCount
+              ? `Regenerar (${regenerationsLeft})`
+              : "Regenerar"}
         </button>
       </div>
+      {exhausted && (
+        <p className="pt-1 text-center text-[11px] text-muted-foreground">
+          Usaste tus regeneraciones del día. Volvé mañana para más opciones.
+        </p>
+      )}
     </div>
   );
 }
@@ -228,7 +303,25 @@ function SparkleIcon() {
   );
 }
 
-function RefreshIcon() {
+function PlusIcon() {
+  return (
+    <svg
+      width="14"
+      height="14"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2.2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <path d="M12 5v14M5 12h14" />
+    </svg>
+  );
+}
+
+function RefreshIcon({ spinning = false }: { spinning?: boolean }) {
   return (
     <svg
       width="14"
@@ -239,6 +332,7 @@ function RefreshIcon() {
       strokeWidth={2}
       strokeLinecap="round"
       strokeLinejoin="round"
+      className={spinning ? "animate-spin" : undefined}
       aria-hidden
     >
       <path d="M21 12a9 9 0 1 1-3-6.7L21 8" />

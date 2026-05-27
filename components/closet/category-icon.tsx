@@ -28,12 +28,13 @@ export function CategoryIcon({
   };
 
   switch (slug) {
-    // Camiseta clásica: cuello redondo, hombros, sisas, cuerpo
+    // Camiseta clásica: cuello redondo, hombros, sisas, cuerpo más
+    // cuadrado (antes v13 = body alargado, ahora v9 = proporcional).
     case "superior":
       return (
         <svg {...common}>
-          <path d="M9 3.5h6l3.5 2-1 4-2-1v13H8.5v-13l-2 1-1-4z" />
-          <path d="M9 3.5c0 1.5 1.4 2.5 3 2.5s3-1 3-2.5" />
+          <path d="M9 5.5h6l3.5 2-1 4-2-1v9H8.5v-9l-2 1-1-4z" />
+          <path d="M9 5.5c0 1.5 1.4 2.5 3 2.5s3-1 3-2.5" />
         </svg>
       );
 

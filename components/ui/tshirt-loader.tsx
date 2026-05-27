@@ -46,8 +46,10 @@ export function TshirtLoader({ size = 100 }: { size?: number }) {
   );
 }
 
+// Silueta más cuadrada — body más corto (y bottom 86 → 70) y centrada en
+// el viewBox. La camiseta original quedaba muy alargada como un vestido.
 const TSHIRT =
-  "M30 14 L41 8 Q50 16 59 8 L70 14 L85 26 L78 38 L70 33 L70 86 L30 86 L30 33 L22 38 L15 26 Z";
+  "M30 22 L41 16 Q50 24 59 16 L70 22 L85 34 L78 46 L70 41 L70 78 L30 78 L30 41 L22 46 L15 34 Z";
 
 const COMET_KEYFRAMES = `
 @keyframes tshirt-comet {

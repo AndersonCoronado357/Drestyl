@@ -1,17 +1,15 @@
 import { redirect } from "next/navigation";
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import { getSignedPhotoUrls, type Garment } from "@/lib/garments";
-import { OutfitPreview } from "@/components/today/outfit-preview";
+import { OutfitView } from "@/components/today/outfit-view";
 
 /**
- * Pantalla de sugerencia de outfit.
+ * Entry point de la pantalla de sugerencia.
  *
- * Fase 3 (acá): arma un outfit "demo" tomando una prenda activa random
- * de cada categoría clave (superior, sobreprenda, inferior, calzado,
- * accesorio). Sin IA todavía — solo muestra el layout que va a usar.
- *
- * Fase 4: este server component llamará a `/api/suggest-outfit` con
- * clima + ocasión y la IA elegirá las prendas. Mismo OutfitPreview.
+ * El server hace lo mínimo: auth + count de prendas activas. Si el clóset
+ * está vacío mostramos un empty state estático (no tiene sentido pegarle a
+ * la IA sin prendas). Si hay prendas, delegamos al componente client que
+ * llama a `/api/suggest-outfit` y se encarga del loader/error/render.
  */
 export default async function SugerenciaPage() {
   const supabase = await createClient();
@@ -22,67 +20,62 @@ export default async function SugerenciaPage() {
     redirect("/login");
   }
 
-  const { data: garments } = await supabase
+  const { count } = await supabase
     .from("garments")
-    .select(
-      "id, user_id, name, category, photo_path, is_active, bg_cleaned, formality, climate, created_at, updated_at",
-    )
+    .select("id", { count: "exact", head: true })
     .eq("is_active", true);
+  const totalActive = count ?? 0;
 
-  const list = (garments ?? []) as Garment[];
-
-  // Agrupar por categoría
-  const byCategory = new Map<string, Garment[]>();
-  for (const g of list) {
-    const arr = byCategory.get(g.category) ?? [];
-    arr.push(g);
-    byCategory.set(g.category, arr);
+  if (totalActive === 0) {
+    return (
+      <section className="flex min-h-0 flex-1 flex-col items-center justify-center px-6 animate-fade-in">
+        <div className="grid size-16 place-items-center rounded-full bg-accent/15 text-accent">
+          <ClothesIcon />
+        </div>
+        <h1 className="mt-5 text-xl font-semibold tracking-tight text-foreground">
+          Tu clóset está vacío
+        </h1>
+        <p className="mt-2 max-w-xs text-center text-sm text-muted-foreground">
+          Para sugerirte un outfit primero necesitamos prendas. Sumá algunas
+          desde tu clóset.
+        </p>
+        <div className="mt-6 w-full max-w-xs space-y-2">
+          <Link
+            href="/closet/nueva"
+            className="block h-12 w-full rounded-2xl bg-primary text-center text-base font-semibold leading-[3rem] text-primary-foreground transition-transform active:scale-[0.99]"
+          >
+            Sumar prendas
+          </Link>
+          <Link
+            href="/"
+            className="block h-11 w-full rounded-2xl bg-accent/8 text-center text-sm font-medium leading-[2.75rem] text-foreground transition-colors hover:bg-accent/15"
+          >
+            Volver
+          </Link>
+        </div>
+      </section>
+    );
   }
 
-  function pickRandom(slot: string): Garment | null {
-    const arr = byCategory.get(slot) ?? [];
-    if (arr.length === 0) return null;
-    return arr[Math.floor(Math.random() * arr.length)];
-  }
+  return <OutfitView totalActive={totalActive} />;
+}
 
-  function pickRandomMany(slot: string, max: number): Garment[] {
-    const arr = [...(byCategory.get(slot) ?? [])];
-    if (arr.length === 0) return [];
-    // Fisher-Yates parcial: tomar hasta `max` (o lo que haya).
-    const n = Math.min(max, arr.length);
-    for (let i = 0; i < n; i++) {
-      const j = i + Math.floor(Math.random() * (arr.length - i));
-      [arr[i], arr[j]] = [arr[j], arr[i]];
-    }
-    return arr.slice(0, n);
-  }
-
-  // Orden de prioridad: prendas base primero, accesorios al final.
-  // Para accesorios podemos sugerir 1-3 (reloj + correa + gafas, por ej.).
-  const accessoriesAvailable = (byCategory.get("accesorio") ?? []).length;
-  const accessoryCount = Math.min(
-    accessoriesAvailable,
-    accessoriesAvailable >= 2 ? 2 : accessoriesAvailable,
-  );
-
-  const outfit = [
-    pickRandom("superior"),
-    pickRandom("inferior"),
-    pickRandom("calzado"),
-    pickRandom("sobreprenda"),
-    ...pickRandomMany("accesorio", accessoryCount),
-  ].filter((g): g is Garment => g !== null);
-
-  const photoMap = await getSignedPhotoUrls(supabase, user.id, outfit);
-  const photoUrls = Object.fromEntries(
-    outfit.map((g) => [g.id, photoMap.get(g.photo_path) ?? null] as const),
-  );
-
+function ClothesIcon() {
   return (
-    <OutfitPreview
-      garments={outfit}
-      photoUrls={photoUrls}
-      totalActive={list.length}
-    />
+    <svg
+      width="32"
+      height="32"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.6}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <path d="M12 2l-3 3 3 3 3-3-3-3z" />
+      <path d="M9 5L3 9l3 5h12l3-5-6-4" />
+      <path d="M6 14v7h12v-7" />
+    </svg>
   );
 }
