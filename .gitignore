@@ -40,9 +40,12 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# docs locales que no van al repo
-AGENTS.md
-CLAUDE.md
+# docs locales que no van al repo (briefs, planes, AI-generated)
+# Ignora todos los .md salvo README.md — los docs internos se quedan locales.
+*.md
+!README.md
 
 # config local de Claude Code (paths específicos por máquina)
 .claude/
+
+certificates

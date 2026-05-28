@@ -72,70 +72,80 @@ function HistorialRow({
     .map((id) => garmentsById[id])
     .filter((g): g is Garment => g !== undefined);
 
-  // Mostramos hasta 4 thumbnails; si hay más, mostramos un "+N" al final.
+  // Mostramos hasta 4 thumbnails; si hay más, "+N" al final.
+  // Usamos flex-1 con aspect-square para que las imágenes se adapten al
+  // ancho del contenedor sin causar scroll horizontal en mobiles angostos.
   const THUMBS = 4;
   const visible = garments.slice(0, THUMBS);
   const extra = Math.max(0, garments.length - THUMBS);
 
   const dateLabel = formatDateLabel(outfit.wornDate);
   const subtitle = outfit.occasion?.trim() || dateLabel.absolute;
+  const hasSubtitle = !!outfit.occasion?.trim();
 
   return (
     <Link
       href={`/historial/${outfit.id}`}
-      className="group flex items-center gap-3 rounded-2xl bg-accent/8 p-3 transition-colors hover:bg-accent/12 active:scale-[0.99]"
+      className="group flex flex-col gap-3 overflow-hidden rounded-2xl bg-accent/8 p-3 transition-colors hover:bg-accent/12 active:scale-[0.99]"
     >
-      {/* Stack de thumbs apilados horizontalmente con leve overlap */}
-      <div className="flex shrink-0 -space-x-2">
+      {/* Fila 1: texto (fecha + ocasión) + badge + chevron */}
+      <div className="flex items-center gap-2">
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-sm font-semibold text-foreground">
+            {dateLabel.relative}
+          </p>
+          {hasSubtitle && (
+            <p className="truncate text-xs text-muted-foreground">
+              {subtitle}
+            </p>
+          )}
+        </div>
+        {outfit.source !== "ai_suggested" && (
+          <span className="shrink-0 rounded-full bg-accent/15 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-accent">
+            {outfit.source === "user_edited" ? "Editado" : "Sin IA"}
+          </span>
+        )}
+        <ChevronRight />
+      </div>
+
+      {/* Fila 2: imágenes responsive — cada una flex-1 + aspect-square,
+          se distribuyen el ancho disponible sin desbordar el contenedor. */}
+      <div className="flex gap-2">
         {visible.length === 0 ? (
-          <div className="grid size-12 place-items-center rounded-xl bg-background text-[10px] text-muted-foreground">
-            —
+          <div className="grid aspect-[4/1] flex-1 place-items-center rounded-xl bg-background text-[10px] text-muted-foreground">
+            Las prendas ya no están en tu clóset
           </div>
         ) : (
-          visible.map((g) => {
-            const url = photoUrls[g.id];
-            const label = g.name?.trim() || getCategoryLabel(g.category);
-            return (
-              <div
-                key={g.id}
-                className="relative size-12 overflow-hidden rounded-xl bg-background ring-2 ring-accent/8"
-                title={label}
-              >
-                {url ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={url}
-                    alt={label}
-                    className="size-full object-contain"
-                    loading="lazy"
-                  />
-                ) : null}
+          <>
+            {visible.map((g) => {
+              const url = photoUrls[g.id];
+              const label = g.name?.trim() || getCategoryLabel(g.category);
+              return (
+                <div
+                  key={g.id}
+                  className="relative aspect-square min-w-0 flex-1 overflow-hidden rounded-xl bg-background"
+                  title={label}
+                >
+                  {url ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={url}
+                      alt={label}
+                      className="size-full object-contain"
+                      loading="lazy"
+                    />
+                  ) : null}
+                </div>
+              );
+            })}
+            {extra > 0 && (
+              <div className="grid aspect-square min-w-0 flex-1 place-items-center rounded-xl bg-accent/20 text-xs font-semibold text-accent">
+                +{extra}
               </div>
-            );
-          })
-        )}
-        {extra > 0 && (
-          <div className="grid size-12 place-items-center rounded-xl bg-accent/20 text-xs font-semibold text-accent ring-2 ring-accent/8">
-            +{extra}
-          </div>
+            )}
+          </>
         )}
       </div>
-
-      {/* Fecha + ocasión + chevron */}
-      <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-semibold text-foreground">
-          {dateLabel.relative}
-        </p>
-        <p className="truncate text-xs text-muted-foreground">{subtitle}</p>
-      </div>
-
-      {outfit.source !== "ai_suggested" && (
-        <span className="shrink-0 rounded-full bg-accent/15 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-accent">
-          {outfit.source === "user_edited" ? "Editado" : "Sin IA"}
-        </span>
-      )}
-
-      <ChevronRight />
     </Link>
   );
 }

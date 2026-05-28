@@ -211,7 +211,7 @@ export function TodayView({
             sessionStorage.removeItem("drestyl:occasion");
           }
         }}
-        className="mt-auto h-14 shrink-0 w-full inline-flex items-center justify-center rounded-2xl bg-primary text-base font-semibold text-primary-foreground transition-transform active:scale-[0.99]"
+        className="h-14 shrink-0 w-full inline-flex items-center justify-center rounded-2xl bg-primary text-base font-semibold text-primary-foreground transition-transform active:scale-[0.99]"
       >
         Sugerir outfit
       </Link>

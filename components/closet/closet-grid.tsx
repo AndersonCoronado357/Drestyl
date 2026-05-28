@@ -122,7 +122,7 @@ function OverviewBody({
   onSelect: (f: Filter) => void;
 }) {
   return (
-    <div className="grid min-h-0 flex-1 grid-cols-1 gap-2 animate-fade-in lg:auto-rows-fr lg:grid-cols-3 lg:gap-4">
+    <div className="grid min-h-0 flex-1 grid-cols-1 gap-2 pb-4 animate-fade-in lg:auto-rows-fr lg:grid-cols-3 lg:gap-4">
       <CategoryButton
         label={ALL_LABEL}
         hint={ALL_HINT}

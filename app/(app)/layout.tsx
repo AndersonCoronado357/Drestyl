@@ -27,14 +27,19 @@ export default async function AppLayout({
     redirect("/onboarding/location");
   }
 
-  // `h-dvh` (no min-h) + main como contenedor flex column → cada página
-  // puede usar `flex-1 min-h-0` para llenar el alto exacto y scrollear
-  // INTERNO en vez de a nivel de página. `pb-20` reserva el alto del
-  // BottomNav fixed (h-16 = 64px + pb-safe ≈ 80px). `overflow-hidden`
-  // mata cualquier scroll a nivel main por si una página rebalsa.
+  // `h-dvh` + main como contenedor flex column → cada página puede usar
+  // `flex-1 min-h-0` para llenar el alto exacto y scrollear INTERNO.
+  // Padding bottom = altura del BottomNav (h-16 = 64px) + safe-area del
+  // iPhone home indicator. Sin el calc(), en iPhones el contenido bajo
+  // quedaba tapado por el nav fixed.
   return (
     <div className="flex h-dvh flex-col">
-      <main className="flex w-full flex-1 flex-col overflow-hidden px-5 pb-20 pt-safe md:px-8 lg:px-12">
+      <main
+        className="flex w-full flex-1 flex-col overflow-hidden px-5 pt-safe md:px-8 lg:px-12"
+        style={{
+          paddingBottom: "calc(4rem + env(safe-area-inset-bottom, 0px))",
+        }}
+      >
         {children}
       </main>
       <BottomNav />

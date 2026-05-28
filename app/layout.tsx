@@ -18,13 +18,17 @@ export const metadata: Metadata = {
     capable: true,
     title: "Drestyl",
     statusBarStyle: "default",
+    startupImage: ["/icons/apple-touch-icon.png"],
   },
   formatDetection: {
     telephone: false,
   },
   icons: {
-    icon: "/icons/icon-192.png",
-    apple: "/icons/icon-192.png",
+    icon: [
+      { url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icons/icon-512.png", sizes: "512x512", type: "image/png" },
+    ],
+    apple: "/icons/apple-touch-icon.png",
   },
 };
 
@@ -36,23 +40,18 @@ export const viewport: Viewport = {
   viewportFit: "cover",
 };
 
-// Limpieza de service workers viejos que cacheaban agresivamente en Fase 0.
-// Usamos Next/Script con strategy `afterInteractive` para que NO interfiera
-// con la hidratación de React (eso fue lo que rompió todos los handlers
-// interactivos en el celular cuando lo puse como script crudo en <head>).
-const SW_CLEANUP = `
+// Registro del service worker. Es lo que habilita la "instalabilidad" en
+// Chrome/Edge — junto al manifest + íconos válidos cumple los criterios.
+// strategy="afterInteractive" garantiza que NO bloquee la hidratación de
+// React (eso rompió cosas en versiones anteriores cuando el SW se cargaba
+// inline en el head).
+const SW_REGISTER = `
 (function(){
+  if (!('serviceWorker' in navigator)) return;
   try {
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.getRegistrations().then(function(rs){
-        rs.forEach(function(r){ r.unregister(); });
-      });
-    }
-    if (typeof caches !== 'undefined') {
-      caches.keys().then(function(ks){
-        ks.forEach(function(k){ caches.delete(k); });
-      });
-    }
+    navigator.serviceWorker.register('/sw.js').catch(function(err){
+      console.warn('[sw] register failed:', err);
+    });
   } catch(e) {}
 })();
 `;
@@ -66,8 +65,8 @@ export default function RootLayout({
     <html lang="es" className={inter.variable}>
       <body className="min-h-full bg-background text-foreground font-sans">
         {children}
-        <Script id="sw-cleanup" strategy="afterInteractive">
-          {SW_CLEANUP}
+        <Script id="sw-register" strategy="afterInteractive">
+          {SW_REGISTER}
         </Script>
       </body>
     </html>

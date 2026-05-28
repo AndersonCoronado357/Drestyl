@@ -4,6 +4,7 @@ import { LogoutButton } from "@/components/auth/logout-button";
 import { GenderForm } from "@/components/settings/gender-form";
 import { RepeatWindowSlider } from "@/components/settings/repeat-window-slider";
 import { StylePreferencesField } from "@/components/settings/style-preferences-field";
+import { InstallButton } from "@/components/pwa/install-button";
 import type { GenderSlug } from "@/lib/gender";
 import { isValidGender } from "@/lib/gender";
 
@@ -72,6 +73,10 @@ export default async function AjustesPage() {
       <div className="rounded-xl border border-border bg-background p-5">
         <GenderForm initial={gender} />
       </div>
+
+      {/* Sección: App */}
+      <SectionTitle className="mt-8">Acceso rápido</SectionTitle>
+      <InstallButton />
 
       {/* Sección: Cuenta */}
       <SectionTitle className="mt-8">Cuenta</SectionTitle>
