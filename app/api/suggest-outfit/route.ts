@@ -102,12 +102,12 @@ export async function POST(request: NextRequest) {
       ? ((body as { occasion: string }).occasion).trim().slice(0, 300)
       : "";
 
-  // 1) Perfil — incluye contador de llamadas a la IA del día y flag de
-  //    cupo ilimitado (usuarios de testing/dueño se saltean el límite).
+  // 1) Perfil — incluye contador de llamadas, flag unlimited, y las
+  //    preferencias de estilo del usuario (texto libre que va al prompt).
   const { data: profile } = await supabase
     .from("profiles")
     .select(
-      "default_lat, default_lng, default_city, repeat_window_days, ai_calls_date, ai_calls_count, ai_calls_unlimited",
+      "default_lat, default_lng, default_city, repeat_window_days, ai_calls_date, ai_calls_count, ai_calls_unlimited, style_preferences",
     )
     .eq("id", user.id)
     .maybeSingle();
@@ -147,20 +147,57 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "no_garments" }, { status: 400 });
   }
 
-  // 3) Outfits recientes para "no repetir"
+  // 3) Outfits recientes — dos usos:
+  //    a) "no repetir prendas": IDs usados en los últimos N días (configurable).
+  //    b) "estilo histórico": últimos ~15 outfits aceptados con su composición
+  //       completa, como referencia del gusto personal del usuario. La IA
+  //       hace pattern-matching con esto en vez de pura clasificación pura.
   const windowDays = profile.repeat_window_days ?? 10;
-  const cutoffDate = new Date(Date.now() - windowDays * 24 * 3600 * 1000)
+  const cutoffDateNoRepeat = new Date(Date.now() - windowDays * 24 * 3600 * 1000)
     .toISOString()
     .split("T")[0];
-  const { data: recentOutfits } = await supabase
+  // Ventana de 30 días para "estilo histórico" — los gustos no cambian
+  // tanto en un mes y mantiene el prompt liviano.
+  const cutoffDateStyle = new Date(Date.now() - 30 * 24 * 3600 * 1000)
+    .toISOString()
+    .split("T")[0];
+  const { data: recentOutfitsData } = await supabase
     .from("outfits")
-    .select("worn_date, garment_ids")
-    .gte("worn_date", cutoffDate)
-    .order("worn_date", { ascending: false });
+    .select("worn_date, garment_ids, occasion, source")
+    .gte("worn_date", cutoffDateStyle)
+    .order("worn_date", { ascending: false })
+    .order("created_at", { ascending: false })
+    .limit(15);
+  const recentOutfits = recentOutfitsData ?? [];
+
   const recentlyUsed = new Set<string>();
-  for (const o of recentOutfits ?? []) {
+  for (const o of recentOutfits) {
+    if (o.worn_date < cutoffDateNoRepeat) continue; // fuera de la ventana de no-repetir
     for (const id of (o.garment_ids as string[] | null) ?? []) {
       recentlyUsed.add(id);
+    }
+  }
+
+  // Para enriquecer los outfits del bloque "estilo histórico" necesitamos
+  // los nombres + categorías de cada prenda (incluso si fueron borradas
+  // del clóset después, las del outfit aceptado siguen como referencia).
+  const historicalGarmentIds = new Set<string>();
+  for (const o of recentOutfits) {
+    for (const id of (o.garment_ids as string[] | null) ?? []) {
+      historicalGarmentIds.add(id);
+    }
+  }
+  const historicalGarmentsMap = new Map<
+    string,
+    { name: string | null; category: string }
+  >();
+  if (historicalGarmentIds.size > 0) {
+    const { data: histGarments } = await supabase
+      .from("garments")
+      .select("id, name, category")
+      .in("id", Array.from(historicalGarmentIds));
+    for (const g of histGarments ?? []) {
+      historicalGarmentsMap.set(g.id, { name: g.name, category: g.category });
     }
   }
 
@@ -264,6 +301,13 @@ export async function POST(request: NextRequest) {
     weather,
     occasion,
     recentlyUsed,
+    profile.style_preferences ?? null,
+    recentOutfits.map((o) => ({
+      wornDate: o.worn_date as string,
+      occasion: (o.occasion as string | null) ?? null,
+      garmentIds: ((o.garment_ids as string[] | null) ?? []),
+    })),
+    historicalGarmentsMap,
   );
 
   const parts: Array<
@@ -566,11 +610,20 @@ export async function POST(request: NextRequest) {
 // Prompt
 // ─────────────────────────────────────────────────────────────────────
 
+type HistoricalOutfit = {
+  wornDate: string;
+  occasion: string | null;
+  garmentIds: string[];
+};
+
 function buildPrompt(
   garments: Garment[],
   weather: WeatherSnapshot | null,
   occasion: string,
   recentlyUsed: Set<string>,
+  stylePreferences: string | null,
+  historicalOutfits: HistoricalOutfit[],
+  historicalGarmentsMap: Map<string, { name: string | null; category: string }>,
 ): string {
   // Le pasamos el ESTIMADO DEL DÍA primero (lo más importante para escoger
   // el outfit) y el estado actual como referencia secundaria. Si va a
@@ -603,11 +656,54 @@ function buildPrompt(
       ? `Prendas usadas en los últimos días (EVITAR salvo que no haya alternativa razonable): ${recentIds.join(", ")}`
       : "No hay prendas usadas recientemente — todas disponibles.";
 
+  const preferencesBlock = stylePreferences?.trim()
+    ? `PREFERENCIAS DEL USUARIO (texto libre, respetalas salvo que vayan en contra del clima o la ocasión):\n"${stylePreferences.trim()}"`
+    : "El usuario no especificó preferencias particulares.";
+
+  // ESTILO HISTÓRICO — últimos outfits aceptados. Le da a la IA pattern
+  // de los gustos reales del usuario sin necesidad de ML. Cada línea es
+  // un outfit pasado con: fecha relativa, ocasión (si la había) y la
+  // composición usando "categoría: nombre" para que la IA "vea" el patrón
+  // sin tener que cargar las fotos antiguas.
+  const todayMs = Date.now();
+  const historyLines = historicalOutfits
+    .map((o) => {
+      const pieces = o.garmentIds
+        .map((id) => historicalGarmentsMap.get(id))
+        .filter((g): g is { name: string | null; category: string } => !!g)
+        .map((g) => `${g.category}: ${g.name?.trim() || "(sin nombre)"}`);
+      if (pieces.length === 0) return null;
+      const daysAgo = Math.max(
+        0,
+        Math.round(
+          (todayMs - new Date(o.wornDate + "T12:00:00").getTime()) /
+            86_400_000,
+        ),
+      );
+      const when =
+        daysAgo === 0
+          ? "hoy"
+          : daysAgo === 1
+            ? "ayer"
+            : `hace ${daysAgo}d`;
+      const occ = o.occasion?.trim() ? ` [${o.occasion.trim().slice(0, 40)}]` : "";
+      return `- ${when}${occ}: ${pieces.join(" + ")}`;
+    })
+    .filter((l): l is string => l !== null);
+
+  const historyBlock =
+    historyLines.length > 0
+      ? `ESTILO HISTÓRICO DEL USUARIO (últimos ${historyLines.length} outfits aceptados — úsalos como referencia de su gusto personal, no como restricción rígida. Notá patrones de color, formalidad, qué empareja con qué, qué tipo de accesorios usa):\n${historyLines.join("\n")}`
+      : "El usuario todavía no aceptó ningún outfit — no hay historial de estilo.";
+
   return `Sos un estilista personal. Te paso ${garments.length} prendas activas del clóset de un usuario. Cada prenda viene con su id, categoría y metadata, seguida de su foto (fondo limpio).
 
 ${weatherLine}
 ${occasionLine}
 ${recentLine}
+${preferencesBlock}
+
+${historyBlock}
 
 REGLAS:
 1. OBLIGATORIO en TODO outfit, sin excepción: 1 prenda con category="superior" + 1 con category="inferior" + 1 con category="calzado". Si te falta alguna en tu respuesta, ESTÁ MAL. Revisá tu output antes de mandarlo.

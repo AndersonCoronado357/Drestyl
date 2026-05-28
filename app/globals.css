@@ -220,6 +220,40 @@ body {
   width: 0;
   height: 0;
 }
+/* Slider de "no repetir prendas" en Ajustes — el thumb es invisible
+   (sin bolita) pero conserva 24px de área para el touch/drag. La pista
+   visual con el relleno lila vive en el JSX como divs absolutos. */
+.repeat-window-range::-webkit-slider-thumb {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 24px;
+  height: 24px;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  cursor: grab;
+}
+.repeat-window-range::-webkit-slider-thumb:active {
+  cursor: grabbing;
+}
+.repeat-window-range::-moz-range-thumb {
+  width: 24px;
+  height: 24px;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  cursor: grab;
+}
+.repeat-window-range::-webkit-slider-runnable-track {
+  background: transparent;
+}
+.repeat-window-range::-moz-range-track {
+  background: transparent;
+}
+.repeat-window-range:focus {
+  outline: none;
+}
+
 /* Scrollbar personalizado — fino, lila, sin flechas. Solo aparece donde
    se aplica `.custom-scroll` explícito. El resto de la app sigue con el
    scroll oculto. Override del bloque global de arriba. */

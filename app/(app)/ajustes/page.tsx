@@ -2,6 +2,8 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { LogoutButton } from "@/components/auth/logout-button";
 import { GenderForm } from "@/components/settings/gender-form";
+import { RepeatWindowSlider } from "@/components/settings/repeat-window-slider";
+import { StylePreferencesField } from "@/components/settings/style-preferences-field";
 import type { GenderSlug } from "@/lib/gender";
 import { isValidGender } from "@/lib/gender";
 
@@ -17,7 +19,9 @@ export default async function AjustesPage() {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("display_name, gender")
+    .select(
+      "display_name, gender, repeat_window_days, style_preferences",
+    )
     .eq("id", user.id)
     .maybeSingle();
 
@@ -28,27 +32,71 @@ export default async function AjustesPage() {
   const gender: GenderSlug =
     profile && isValidGender(profile.gender) ? profile.gender : "mixto";
 
+  const repeatWindow = Math.min(
+    30,
+    Math.max(1, profile?.repeat_window_days ?? 10),
+  );
+
+  const stylePrefs = profile?.style_preferences ?? "";
+
+  // Inicial del nombre para el avatar — primera letra mayúscula.
+  const initial = (displayName.trim()[0] ?? "?").toUpperCase();
+
   return (
-    <section className="pt-8">
-      <header className="mb-8">
-        <p className="text-sm text-muted-foreground">Ajustes</p>
-        <h1 className="mt-1 text-3xl font-semibold tracking-tight">
-          {displayName}
-        </h1>
-        <p className="mt-1 text-sm text-muted-foreground">{user.email}</p>
+    <section className="flex min-h-0 flex-1 flex-col overflow-y-auto pt-8">
+      {/* Header con avatar + datos del usuario */}
+      <header className="mb-8 shrink-0 flex items-center gap-4">
+        <div className="grid size-16 shrink-0 place-items-center rounded-full bg-accent text-2xl font-semibold text-accent-foreground">
+          {initial}
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="text-xs uppercase tracking-wider text-muted-foreground">
+            Tu cuenta
+          </p>
+          <h1 className="mt-0.5 truncate text-2xl font-semibold tracking-tight">
+            {displayName}
+          </h1>
+          <p className="truncate text-sm text-muted-foreground">{user.email}</p>
+        </div>
       </header>
 
-      <div className="space-y-6">
-        <div className="rounded-xl border border-border bg-background p-5">
-          <GenderForm initial={gender} />
-        </div>
-
-        <LogoutButton />
-
-        <p className="pt-2 text-xs text-muted-foreground">
-          Datos meteorológicos por Open-Meteo.
-        </p>
+      {/* Sección: Preferencias para la IA */}
+      <SectionTitle>Cómo te ayudo</SectionTitle>
+      <div className="space-y-3">
+        <StylePreferencesField initial={stylePrefs} />
+        <RepeatWindowSlider initial={repeatWindow} />
       </div>
+
+      {/* Sección: Perfil */}
+      <SectionTitle className="mt-8">Tu perfil</SectionTitle>
+      <div className="rounded-xl border border-border bg-background p-5">
+        <GenderForm initial={gender} />
+      </div>
+
+      {/* Sección: Cuenta */}
+      <SectionTitle className="mt-8">Cuenta</SectionTitle>
+      <LogoutButton />
+
+      {/* Pie */}
+      <p className="mt-10 mb-4 text-center text-[11px] text-muted-foreground">
+        Datos meteorológicos por Open-Meteo · v1.0
+      </p>
     </section>
+  );
+}
+
+function SectionTitle({
+  children,
+  className = "",
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) {
+  return (
+    <p
+      className={`mb-3 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground ${className}`}
+    >
+      {children}
+    </p>
   );
 }
