@@ -3,10 +3,12 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --experimental-https",
+    "preinstall": "npx -y only-allow npm",
+    "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "keep-awake": "powershell -ExecutionPolicy Bypass -File scripts/keep-awake.ps1"
   },
   "dependencies": {
     "@huggingface/transformers": "^4.2.0",

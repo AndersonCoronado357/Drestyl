@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+import { getSessionUser } from "@/lib/supabase/server";
 import { getSignedPhotoUrls, type Garment } from "@/lib/garments";
 import { HistorialList } from "@/components/historial/historial-list";
 
@@ -20,10 +20,7 @@ import { HistorialList } from "@/components/historial/historial-list";
  * pesado (>1000), agregamos paginación.
  */
 export default async function HistorialPage() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { supabase, user } = await getSessionUser();
   if (!user) {
     redirect("/login");
   }

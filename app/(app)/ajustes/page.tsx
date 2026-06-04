@@ -1,18 +1,17 @@
 import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+import { getSessionUser } from "@/lib/supabase/server";
 import { LogoutButton } from "@/components/auth/logout-button";
 import { GenderForm } from "@/components/settings/gender-form";
 import { RepeatWindowSlider } from "@/components/settings/repeat-window-slider";
 import { StylePreferencesField } from "@/components/settings/style-preferences-field";
 import { InstallButton } from "@/components/pwa/install-button";
+import { ChangePassword } from "@/components/settings/change-password";
 import type { GenderSlug } from "@/lib/gender";
 import { isValidGender } from "@/lib/gender";
+import { version as appVersion } from "@/package.json";
 
 export default async function AjustesPage() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { supabase, user } = await getSessionUser();
 
   if (!user) {
     redirect("/login");
@@ -80,11 +79,43 @@ export default async function AjustesPage() {
 
       {/* Sección: Cuenta */}
       <SectionTitle className="mt-8">Cuenta</SectionTitle>
-      <LogoutButton />
+      <div className="space-y-3">
+        <ChangePassword />
+        <LogoutButton />
+      </div>
+
+      {/* Sección: Créditos */}
+      <SectionTitle className="mt-8">Créditos</SectionTitle>
+      <div className="rounded-xl border border-border bg-background p-5">
+        <ul className="space-y-3 text-sm">
+          <li className="flex items-center justify-between gap-3">
+            <span className="text-muted-foreground">Clima</span>
+            <a
+              href="https://open-meteo.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-medium text-accent transition-opacity hover:opacity-70"
+            >
+              Open-Meteo
+            </a>
+          </li>
+          <li className="flex items-center justify-between gap-3">
+            <span className="text-muted-foreground">Ubicación</span>
+            <a
+              href="https://www.openstreetmap.org/copyright"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-medium text-accent transition-opacity hover:opacity-70"
+            >
+              OpenStreetMap
+            </a>
+          </li>
+        </ul>
+      </div>
 
       {/* Pie */}
       <p className="mt-10 mb-4 text-center text-[11px] text-muted-foreground">
-        Datos meteorológicos por Open-Meteo · v1.0
+        Drestyl v{appVersion}
       </p>
     </section>
   );

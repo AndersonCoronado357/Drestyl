@@ -1,19 +1,18 @@
 import { redirect } from "next/navigation";
 import { ResetForm } from "@/components/auth/reset-form";
-import { createClient } from "@/lib/supabase/server";
 
-export default async function RestablecerPage() {
-  // Solo permitir esta página si hay sesión activa (la creó /auth/callback
-  // al canjear el token del correo de recuperación). Si alguien llega aquí
-  // directo sin sesión, lo mandamos a /recuperar.
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
+/**
+ * Página para crear una nueva contraseña desde el enlace del correo. El token
+ * llega por la URL (?token=...). Si no hay token, mandamos a /recuperar.
+ */
+export default async function RestablecerPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ token?: string }>;
+}) {
+  const { token } = await searchParams;
+  if (!token) {
     redirect("/recuperar");
   }
-
-  return <ResetForm />;
+  return <ResetForm token={token} />;
 }

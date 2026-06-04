@@ -1,5 +1,5 @@
 import { notFound, redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+import { getSessionUser } from "@/lib/supabase/server";
 import { getSignedPhotoUrls, type Garment } from "@/lib/garments";
 import { HistorialDetail } from "@/components/historial/historial-detail";
 
@@ -17,10 +17,7 @@ export default async function HistorialDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { supabase, user } = await getSessionUser();
   if (!user) {
     redirect("/login");
   }

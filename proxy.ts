@@ -1,83 +1,73 @@
-import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
 /**
- * Proxy de Drestyl (lo que en Next 15 se llamaba middleware).
+ * Proxy de Drestyl (middleware de Next 16).
+ *  - Verifica la cookie de sesión firmada de acmsy (HMAC-SHA256) con Web Crypto
+ *    (compatible con el runtime Edge), SIN viaje de red.
+ *  - Redirige rutas protegidas a /login si no hay sesión, y /login|/signup|
+ *    /recuperar a / si ya hay sesión.
  *
- * 1. Refresca el token de Supabase para que las cookies siempre estén al día.
- * 2. Redirige rutas protegidas a /login si no hay sesión.
- * 3. Redirige /login y /signup a / si ya hay sesión.
- *
- * Esta es una verificación "optimista" basada en la cookie. La verificación
- * de seguridad real (acceso a datos) la hace Postgres con RLS — esto solo
- * mejora la UX evitando renderizar pantallas que vamos a redirigir.
+ * Verificación optimista para UX; la seguridad real de los datos la impone RLS
+ * en Postgres (cada query corre como el usuario de la sesión).
  */
+const COOKIE = "drestyl_session";
+
+function b64url(buf: ArrayBuffer): string {
+  const arr = new Uint8Array(buf);
+  let bin = "";
+  for (let i = 0; i < arr.length; i++) bin += String.fromCharCode(arr[i]);
+  return btoa(bin).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+
+async function hasValidSession(
+  token: string | undefined,
+  secret: string | undefined,
+): Promise<boolean> {
+  if (!token || !secret || !token.includes(".")) return false;
+  const i = token.lastIndexOf(".");
+  const json = token.slice(0, i);
+  const mac = token.slice(i + 1);
+  try {
+    const key = await crypto.subtle.importKey(
+      "raw",
+      new TextEncoder().encode(secret),
+      { name: "HMAC", hash: "SHA-256" },
+      false,
+      ["sign"],
+    );
+    const sig = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(json));
+    return b64url(sig) === mac;
+  } catch {
+    return false;
+  }
+}
+
 export async function proxy(request: NextRequest) {
-  let response = NextResponse.next({ request });
-
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return request.cookies.getAll();
-        },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value }) =>
-            request.cookies.set(name, value),
-          );
-          response = NextResponse.next({ request });
-          cookiesToSet.forEach(({ name, value, options }) =>
-            response.cookies.set(name, value, options),
-          );
-        },
-      },
-    },
-  );
-
-  // Refrescar la sesión si está por expirar.
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
+  const token = request.cookies.get(COOKIE)?.value;
+  const user = await hasValidSession(token, process.env.SESSION_SECRET);
   const path = request.nextUrl.pathname;
 
-  // Pantallas públicas para usuarios SIN sesión. Si hay sesión, redirigir
-  // a / (no tiene sentido ver "Iniciar sesión" si ya estás dentro).
-  const isPublicLogin =
-    path === "/login" || path === "/signup" || path === "/recuperar";
+  const isPublicLogin = path === "/login" || path === "/signup" || path === "/recuperar";
+  const isAuthTechnical = path === "/restablecer" || path.startsWith("/auth/");
+  // /api/photo tiene su propia firma HMAC (no depende de la cookie de sesión),
+  // así que la dejamos pasar siempre (sirve <img>, next/image y fetch interno).
+  const isPublicApi = path.startsWith("/api/photo");
 
-  // Rutas técnicas del flow auth: callbacks, restablecer contraseña.
-  // Permiten visita sin sesión (la creación de sesión ocurre AHÍ) o con
-  // sesión recovery (caso de /restablecer). No las redirigimos ni para
-  // un lado ni para otro — cada una decide en su handler.
-  const isAuthTechnical =
-    path === "/restablecer" || path.startsWith("/auth/");
-
-  if (!user && !isPublicLogin && !isAuthTechnical) {
+  if (!user && !isPublicLogin && !isAuthTechnical && !isPublicApi) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     return NextResponse.redirect(url);
   }
-
   if (user && isPublicLogin) {
     const url = request.nextUrl.clone();
     url.pathname = "/";
     return NextResponse.redirect(url);
   }
-
-  return response;
+  return NextResponse.next();
 }
 
 export const config = {
   matcher: [
-    /*
-     * El proxy corre en todas las rutas EXCEPTO:
-     * - assets estáticos de Next (_next/...)
-     * - assets públicos (icon.svg, manifest.webmanifest, sw.js, favicon)
-     * - archivos con extensión (imágenes, etc.)
-     */
     "/((?!_next/static|_next/image|icon\\.svg|manifest\\.webmanifest|sw\\.js|favicon\\.ico|.*\\.(?:png|jpg|jpeg|gif|webp|svg)).*)",
   ],
 };

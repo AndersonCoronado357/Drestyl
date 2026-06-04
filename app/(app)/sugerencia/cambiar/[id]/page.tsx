@@ -1,5 +1,5 @@
 import { notFound, redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+import { getSessionUser } from "@/lib/supabase/server";
 import { getSignedPhotoUrls, type Garment } from "@/lib/garments";
 import { SwapPieceView } from "@/components/today/swap-piece-view";
 
@@ -25,10 +25,7 @@ export default async function SwapPiecePage({
 }) {
   const { id } = await params;
 
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { supabase, user } = await getSessionUser();
   if (!user) {
     redirect("/login");
   }

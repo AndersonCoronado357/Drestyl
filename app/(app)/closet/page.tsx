@@ -1,15 +1,12 @@
 import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+import { getSessionUser } from "@/lib/supabase/server";
 import { EmptyState } from "@/components/closet/empty-state";
 import { ClosetView } from "@/components/closet/closet-view";
 import { BgRemovalQueue } from "@/components/closet/bg-removal-queue";
 import { getSignedPhotoUrls, type Garment } from "@/lib/garments";
 
 export default async function ClosetPage() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { supabase, user } = await getSessionUser();
 
   if (!user) {
     redirect("/login");

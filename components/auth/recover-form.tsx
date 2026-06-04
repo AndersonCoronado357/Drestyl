@@ -22,9 +22,8 @@ export function RecoverForm() {
         className="mb-5 flex animate-fade-up justify-center lg:hidden"
         style={{ animationDelay: "0ms" }}
       >
-        <span className="text-xl font-bold tracking-tight text-foreground">
-          Drestyl
-        </span>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/icons/logo-text.png" alt="Drestyl" className="h-8 w-auto" />
       </div>
 
       <header

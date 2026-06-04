@@ -9,6 +9,10 @@ type Props = {
   required?: boolean;
   minLength?: number;
   placeholder?: string;
+  /** "md" (default, text-base) para auth. "sm" (text-sm) para contextos
+   *  más densos como Ajustes, donde text-base se ve grande al lado de
+   *  labels chicos. */
+  size?: "md" | "sm";
 };
 
 // Toggle con useState alternando el `type` del input. Más confiable en mobile
@@ -22,8 +26,10 @@ export function PasswordInput({
   required,
   minLength,
   placeholder,
+  size = "md",
 }: Props) {
   const [visible, setVisible] = useState(false);
+  const textCls = size === "sm" ? "text-sm py-2.5" : "text-base py-3";
   return (
     <div className="flex items-center rounded-xl bg-accent/8 pr-1">
       <input
@@ -37,7 +43,7 @@ export function PasswordInput({
         required={required}
         minLength={minLength}
         placeholder={placeholder}
-        className="min-w-0 flex-1 bg-transparent py-3 pl-4 pr-2 text-base text-foreground placeholder:text-muted-foreground/60 outline-none"
+        className={`min-w-0 flex-1 bg-transparent pl-4 pr-2 text-foreground placeholder:text-muted-foreground/60 outline-none ${textCls}`}
       />
       <button
         type="button"

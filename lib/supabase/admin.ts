@@ -10,12 +10,14 @@ import { createClient as createSupabaseClient } from "@supabase/supabase-js";
  * uso accidental en cliente (rompe el build).
  */
 export function createAdminClient() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  // SUPABASE_URL (server, runtime) para no depender de NEXT_PUBLIC_* en el build
+  // de Docker. Solo se usa para el Storage (las fotos siguen en Supabase).
+  const url = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
   if (!url || !serviceKey) {
     throw new Error(
-      "Faltan NEXT_PUBLIC_SUPABASE_URL o SUPABASE_SERVICE_ROLE_KEY en el entorno",
+      "Faltan SUPABASE_URL o SUPABASE_SERVICE_ROLE_KEY en el entorno",
     );
   }
 

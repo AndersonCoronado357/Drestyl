@@ -1,34 +1,78 @@
-import { createServerClient } from "@supabase/ssr";
+import "server-only";
 import { cookies } from "next/headers";
+import { cache } from "react";
+import * as auth from "@/lib/server/auth";
+import { makeFrom } from "@/lib/server/sb";
+import { storePhoto, deletePhotos } from "@/lib/server/photos";
 
-/**
- * Cliente Supabase para Server Components, Server Actions y Route Handlers.
- * Lee y escribe cookies de Next para mantener la sesión en sync.
- *
- * IMPORTANTE: usa la publishable key (no la service role). RLS protege los datos.
- */
-export async function createClient() {
-  const cookieStore = await cookies();
+// Cliente compatible con el subconjunto del cliente Supabase que usa Drestyl,
+// pero 100% sobre acmsy:
+//   - .from()    -> PostgreSQL gestionado + RLS (app.user_id de la sesión).
+//   - .auth      -> usuario leído de la cookie de sesión firmada de acmsy.
+//   - .storage   -> fotos en la BD de acmsy (tabla garment_photos), servidas
+//                   por /api/photo con URL firmada.
+//
+// Las páginas, actions y rutas siguen llamando a `supabase.from(...)`,
+// `supabase.storage.from(bucket).upload/remove(...)` y `supabase.auth.getUser()`.
 
-  return createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return cookieStore.getAll();
-        },
-        setAll(cookiesToSet) {
+function makeStorage() {
+  return {
+    from(bucket: string) {
+      const uid = bucket.replace(/^user-/, "");
+      return {
+        async upload(path: string, file: Blob, opts?: { contentType?: string }) {
           try {
-            cookiesToSet.forEach(({ name, value, options }) =>
-              cookieStore.set(name, value, options),
-            );
-          } catch {
-            // Llamado desde un Server Component — no puede escribir cookies aquí.
-            // El proxy es quien refresca la sesión, así que esto es seguro.
+            const buf = Buffer.from(await file.arrayBuffer());
+            const ct =
+              opts?.contentType ||
+              (file as { type?: string }).type ||
+              "image/webp";
+            await storePhoto(`${bucket}/${path}`, uid, buf, ct);
+            return { data: { path }, error: null };
+          } catch (e) {
+            return {
+              data: null,
+              error: { message: e instanceof Error ? e.message : "upload failed" },
+            };
           }
         },
-      },
+        async remove(paths: string[]) {
+          try {
+            await deletePhotos(paths.map((p) => `${bucket}/${p}`));
+            return { data: {}, error: null };
+          } catch (e) {
+            return {
+              data: null,
+              error: { message: e instanceof Error ? e.message : "remove failed" },
+            };
+          }
+        },
+      };
     },
-  );
+  };
 }
+
+export async function createClient() {
+  const store = await cookies();
+  const sess = auth.readSession(store.get(auth.COOKIE)?.value);
+  const user = sess ? { id: sess.uid, email: sess.email } : null;
+  return {
+    __user: user,
+    auth: {
+      getUser: async () => ({ data: { user }, error: null }),
+      getSession: async () => ({
+        data: { session: user ? { user } : null },
+        error: null,
+      }),
+    },
+    from: makeFrom(user?.id ?? null),
+    storage: makeStorage(),
+    rpc: async () => ({ data: null, error: { message: "rpc no soportado en acmsy" } }),
+  };
+}
+
+// Usuario + cliente para Server Components/páginas (dedup por render con cache()).
+export const getSessionUser = cache(async () => {
+  const supabase = await createClient();
+  return { supabase, user: supabase.__user };
+});

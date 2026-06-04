@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/server";
+import { getSessionUser } from "@/lib/supabase/server";
 import { OutfitView } from "@/components/today/outfit-view";
 
 /**
@@ -12,10 +12,7 @@ import { OutfitView } from "@/components/today/outfit-view";
  * llama a `/api/suggest-outfit` y se encarga del loader/error/render.
  */
 export default async function SugerenciaPage() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { supabase, user } = await getSessionUser();
   if (!user) {
     redirect("/login");
   }

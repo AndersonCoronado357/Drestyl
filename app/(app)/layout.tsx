@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+import { getSessionUser } from "@/lib/supabase/server";
 import { BottomNav } from "@/components/bottom-nav";
 
 export default async function AppLayout({
@@ -9,10 +9,7 @@ export default async function AppLayout({
 }) {
   // Gate de ubicación: la app entera depende del clima local. Si el usuario
   // todavía no concedió geo, lo mandamos al onboarding antes de que entre.
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { supabase, user } = await getSessionUser();
   if (!user) {
     redirect("/login");
   }

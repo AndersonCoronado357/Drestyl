@@ -5,7 +5,7 @@ import Link from "next/link";
 import { updatePassword, type AuthState } from "@/app/actions/auth";
 import { PasswordInput } from "./password-input";
 
-export function ResetForm() {
+export function ResetForm({ token }: { token: string }) {
   const [state, formAction, pending] = useActionState<AuthState, FormData>(
     updatePassword,
     undefined,
@@ -17,9 +17,8 @@ export function ResetForm() {
         className="mb-5 flex animate-fade-up justify-center lg:hidden"
         style={{ animationDelay: "0ms" }}
       >
-        <span className="text-xl font-bold tracking-tight text-foreground">
-          Drestyl
-        </span>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/icons/logo-text.png" alt="Drestyl" className="h-8 w-auto" />
       </div>
 
       <header
@@ -39,6 +38,7 @@ export function ResetForm() {
         className="animate-fade-up space-y-3.5"
         style={{ animationDelay: "140ms" }}
       >
+        <input type="hidden" name="token" value={token} />
         <div className="space-y-1.5">
           <label
             htmlFor="password"

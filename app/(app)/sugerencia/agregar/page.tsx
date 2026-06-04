@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+import { getSessionUser } from "@/lib/supabase/server";
 import { getSignedPhotoUrls, type Garment } from "@/lib/garments";
 import { AddPieceView } from "@/components/today/add-piece-view";
 
@@ -15,10 +15,7 @@ import { AddPieceView } from "@/components/today/add-piece-view";
  * muestra el resto agrupable por categoría.
  */
 export default async function AddPiecePage() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { supabase, user } = await getSessionUser();
   if (!user) {
     redirect("/login");
   }
