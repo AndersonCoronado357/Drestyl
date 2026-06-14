@@ -20,7 +20,7 @@ type ApiResponse = {
   reasoning: string;
   weather: unknown;
   occasion: string;
-  source: "ai_suggested" | "fallback";
+  source: "ai_suggested" | "fallback" | "user_edited";
   /** Cuántas llamadas a la IA le quedan al usuario hoy. El server lo
    *  calcula desde `profiles.ai_calls_count` — el cliente NO lo manipula. */
   callsLeft: number;

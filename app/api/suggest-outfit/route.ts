@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import sharp from "sharp";
 import { createClient } from "@/lib/supabase/server";
 import { getSignedPhotoUrls, type Garment } from "@/lib/garments";
+import { getPhotoFromDb, keyFor } from "@/lib/server/photos";
 
 // Límite duro de prendas que mandamos a la IA por llamada. Más de eso:
 //  - El payload base64 crece mucho (slow transfer a Google).
@@ -236,12 +237,11 @@ export async function POST(request: NextRequest) {
         cacheHits++;
         return { garment: g, mime: cached.mime, data: cached.data };
       }
-      const url = photoMap.get(g.photo_path);
-      if (!url) return null;
       try {
-        const res = await fetch(url, { signal: AbortSignal.timeout(8000) });
-        if (!res.ok) return null;
-        const buf = Buffer.from(await res.arrayBuffer());
+        // Lee la foto directo de la BD de acmsy (sin HTTP/proxy).
+        const photo = await getPhotoFromDb(keyFor(user.id, g.photo_path));
+        if (!photo) return null;
+        const buf = photo.data;
         const resized = await sharp(buf)
           .resize(AI_IMAGE_SIZE, AI_IMAGE_SIZE, {
             fit: "inside",

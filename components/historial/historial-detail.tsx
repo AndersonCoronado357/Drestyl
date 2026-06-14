@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { GarmentCard } from "@/components/closet/garment-card";
+import { getCategoryLabel } from "@/lib/categories";
 import type { Garment } from "@/lib/garments";
 
 type Outfit = {
@@ -66,55 +67,14 @@ export function HistorialDetail({ outfit, garments, photoUrls }: Props) {
         )}
       </header>
 
-      {/* Reasoning + clima + ocasión — card combinada */}
-      <div className="mb-4 shrink-0 rounded-2xl bg-accent/8 px-4 py-3">
-        {outfit.reasoning && (
-          <>
-            <div className="mb-1 flex items-center gap-2">
-              <span className="grid size-5 place-items-center rounded-full bg-accent text-accent-foreground">
-                <SparkleIcon />
-              </span>
-              <p className="text-[10px] font-semibold uppercase tracking-wider text-accent">
-                Por qué este outfit
-              </p>
-            </div>
-            <p className="text-xs leading-relaxed text-foreground">
-              {outfit.reasoning}
-            </p>
-          </>
-        )}
-        {(outfit.occasion || weather) && (
-          <div
-            className={`flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-muted-foreground ${outfit.reasoning ? "mt-3 border-t border-accent/15 pt-2" : ""}`}
-          >
-            {outfit.occasion && (
-              <span>
-                <span className="font-semibold text-foreground">Ocasión:</span>{" "}
-                {outfit.occasion}
-              </span>
-            )}
-            {weather?.temperature != null && (
-              <span>
-                <span className="font-semibold text-foreground">Clima:</span>{" "}
-                {weather.temperature}°
-                {weather.description ? ` · ${weather.description}` : ""}
-                {weather.city ? ` · ${weather.city}` : ""}
-              </span>
-            )}
-          </div>
-        )}
-      </div>
-
-      {/* Grid de prendas (scroll vertical) */}
-      <div className="min-h-0 flex-1 overflow-y-auto">
+      {/* MOBILE: todo scrollea junto (la recomendación NO queda fija) y las
+          prendas van una por fila, igual que en /sugerencia. */}
+      <div className="min-h-0 flex-1 overflow-y-auto lg:hidden">
+        <ReasoningBlock outfit={outfit} weather={weather} className="mb-4" />
         {garments.length === 0 ? (
-          <div className="flex flex-col items-center justify-center pt-8 text-center">
-            <p className="text-sm text-muted-foreground">
-              Las prendas de este outfit ya no están en tu clóset.
-            </p>
-          </div>
+          <EmptyGarments />
         ) : (
-          <div className="grid grid-cols-2 gap-3 pb-2 sm:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6">
+          <div className="space-y-3 pb-2">
             {garments.map((g) => (
               <GarmentCard
                 key={g.id}
@@ -126,7 +86,137 @@ export function HistorialDetail({ outfit, garments, photoUrls }: Props) {
           </div>
         )}
       </div>
+
+      {/* PC: recomendación arriba + carrusel de prendas que llena todo el
+          alto disponible, sin dejar espacio en blanco. */}
+      <div className="hidden lg:flex lg:min-h-0 lg:flex-1 lg:flex-col lg:gap-4">
+        <div className="shrink-0">
+          <ReasoningBlock outfit={outfit} weather={weather} />
+        </div>
+        {garments.length === 0 ? (
+          <EmptyGarments />
+        ) : (
+          <div className="flex min-h-0 flex-1 gap-3 overflow-x-auto pb-1">
+            {garments.map((g) => (
+              <DesktopSlot
+                key={g.id}
+                garment={g}
+                photoUrl={photoUrls[g.id] ?? null}
+                onTap={() => router.push(`/closet/${g.id}`)}
+              />
+            ))}
+          </div>
+        )}
+      </div>
     </section>
+  );
+}
+
+/**
+ * Card "Por qué este outfit" + ocasión + clima. Se reutiliza en mobile
+ * (dentro del scroll) y en PC (fija arriba).
+ */
+function ReasoningBlock({
+  outfit,
+  weather,
+  className = "",
+}: {
+  outfit: Outfit;
+  weather: WeatherSnapshot | null;
+  className?: string;
+}) {
+  if (!outfit.reasoning && !outfit.occasion && !weather) return null;
+  return (
+    <div className={`rounded-2xl bg-accent/8 px-4 py-3 ${className}`}>
+      {outfit.reasoning && (
+        <>
+          <div className="mb-1 flex items-center gap-2">
+            <span className="grid size-5 place-items-center rounded-full bg-accent text-accent-foreground">
+              <SparkleIcon />
+            </span>
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-accent">
+              Por qué este outfit
+            </p>
+          </div>
+          <p className="text-xs leading-relaxed text-foreground">
+            {outfit.reasoning}
+          </p>
+        </>
+      )}
+      {(outfit.occasion || weather) && (
+        <div
+          className={`flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-muted-foreground ${outfit.reasoning ? "mt-3 border-t border-accent/15 pt-2" : ""}`}
+        >
+          {outfit.occasion && (
+            <span>
+              <span className="font-semibold text-foreground">Ocasión:</span>{" "}
+              {outfit.occasion}
+            </span>
+          )}
+          {weather?.temperature != null && (
+            <span>
+              <span className="font-semibold text-foreground">Clima:</span>{" "}
+              {weather.temperature}°
+              {weather.description ? ` · ${weather.description}` : ""}
+              {weather.city ? ` · ${weather.city}` : ""}
+            </span>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function EmptyGarments() {
+  return (
+    <div className="flex flex-col items-center justify-center pt-8 text-center">
+      <p className="text-sm text-muted-foreground">
+        Las prendas de este outfit ya no están en tu clóset.
+      </p>
+    </div>
+  );
+}
+
+/** Slot de prenda para PC: llena el alto de la fila (igual que /sugerencia). */
+function DesktopSlot({
+  garment,
+  photoUrl,
+  onTap,
+}: {
+  garment: Garment;
+  photoUrl: string | null;
+  onTap: () => void;
+}) {
+  const categoryLabel = getCategoryLabel(garment.category);
+  return (
+    <button
+      type="button"
+      onClick={onTap}
+      className="group flex h-full w-[calc((100%-3rem)/5)] min-w-[8rem] shrink-0 flex-col gap-2 text-left"
+    >
+      <div className="relative min-h-0 flex-1 overflow-hidden rounded-2xl bg-accent/8 transition-transform group-active:scale-[0.98]">
+        {photoUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={photoUrl}
+            alt={garment.name ?? categoryLabel}
+            className="size-full object-contain"
+          />
+        ) : (
+          <div className="grid size-full place-items-center text-xs text-muted-foreground">
+            Sin foto
+          </div>
+        )}
+      </div>
+      <div className="shrink-0">
+        <p className="truncate text-xs font-medium text-foreground">
+          {garment.name ?? categoryLabel}
+        </p>
+        <p className="truncate text-[9px] uppercase tracking-wider text-muted-foreground">
+          {categoryLabel}
+        </p>
+      </div>
+    </button>
   );
 }
 

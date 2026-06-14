@@ -1,6 +1,6 @@
 import "server-only";
-import type { SupabaseClient } from "@supabase/supabase-js";
 import type { CategorySlug } from "./categories";
+import { signedPhotoUrl } from "./server/photos";
 
 export type Formality = "formal" | "elegante" | "casual" | "deportivo";
 export type Climate = "frio" | "templado" | "calor" | "mixto";
@@ -19,65 +19,23 @@ export type Garment = {
   updated_at: string;
 };
 
-// Cache module-level de signed URLs. Clave: path@updatedAt. Cuando una foto
-// se reemplaza (bg removal en background) cambia updated_at en DB → clave
-// distinta → URL nueva → browser fetch fresco. Si no cambió, reutilizamos
-// la URL y el browser hace cache hit.
-const SIGNED_URL_TTL_MS = 23 * 60 * 60 * 1000; // 23h, justo abajo del expiry de 24h
-const urlCache = new Map<string, { url: string; until: number }>();
-
 /**
- * Genera URLs firmadas con expiración larga (24h) y las cachea en memoria
- * indexadas por path + updated_at. El mismo URL en re-visits = browser cache
- * hit en las imágenes. Cuando el bg se limpia, updated_at cambia y forzamos
- * URL nueva para que el browser baje la versión limpia.
+ * Devuelve, por cada prenda, la URL de su foto en acmsy (/api/photo con firma
+ * HMAC). La URL incluye `v=updated_at`, así que cuando la foto cambia (bg
+ * removal) la URL cambia y el navegador baja la versión nueva; si no cambió,
+ * la URL es estable y el navegador cachea.
+ *
+ * El primer parámetro `_supabase` se mantiene por compatibilidad con las
+ * llamadas existentes (ya no se usa: las fotos viven en la BD de acmsy).
  */
 export async function getSignedPhotoUrls(
-  supabase: SupabaseClient,
+  _supabase: unknown,
   userId: string,
   garments: Array<{ photo_path: string; updated_at: string }>,
 ): Promise<Map<string, string>> {
   const result = new Map<string, string>();
-  if (garments.length === 0) return result;
-
-  const now = Date.now();
-  const toFetch: string[] = [];
-  const keyByPath = new Map<string, string>();
-
   for (const g of garments) {
-    const key = `${userId}/${g.photo_path}@${g.updated_at}`;
-    keyByPath.set(g.photo_path, key);
-    const cached = urlCache.get(key);
-    if (cached && cached.until > now + 60_000) {
-      result.set(g.photo_path, cached.url);
-    } else if (!toFetch.includes(g.photo_path)) {
-      toFetch.push(g.photo_path);
-    }
+    result.set(g.photo_path, signedPhotoUrl(userId, g.photo_path, g.updated_at));
   }
-
-  if (toFetch.length > 0) {
-    const bucket = `user-${userId}`;
-    const { data } = await supabase.storage
-      .from(bucket)
-      .createSignedUrls(toFetch, 24 * 3600);
-
-    data?.forEach((item) => {
-      if (item.signedUrl && item.path) {
-        result.set(item.path, item.signedUrl);
-        const key = keyByPath.get(item.path);
-        if (key) {
-          urlCache.set(key, { url: item.signedUrl, until: now + SIGNED_URL_TTL_MS });
-        }
-      }
-    });
-  }
-
-  // Limpieza ocasional de entradas viejas (evita memory leak en runs largos).
-  if (urlCache.size > 1000) {
-    for (const [k, v] of urlCache.entries()) {
-      if (v.until < now) urlCache.delete(k);
-    }
-  }
-
   return result;
 }

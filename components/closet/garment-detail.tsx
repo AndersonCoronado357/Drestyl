@@ -195,7 +195,7 @@ export function GarmentDetail({
         >
           {confirmingLeave ? "Salir sin guardar" : "Volver"}
         </button>
-        <div className="flex items-center gap-3 text-xs">
+        <div className="flex items-center gap-2 text-xs">
           {state?.error && (
             <span className="text-destructive">{state.error}</span>
           )}
@@ -235,11 +235,37 @@ export function GarmentDetail({
               <ChevronIcon dir="right" />
             </button>
           </div>
+          {/* Eliminar — ícono al lado del navegador de prendas. Primer toque
+              pide confirmación (se pone rojo), segundo toque elimina. */}
+          <button
+            type="button"
+            onClick={handleDeleteClick}
+            disabled={deletePending}
+            aria-label={
+              confirmingDelete ? "Confirmar eliminación" : "Eliminar prenda"
+            }
+            title={
+              confirmingDelete ? "Confirmar eliminación" : "Eliminar prenda"
+            }
+            className={`flex size-9 shrink-0 items-center justify-center rounded-full transition-colors ${
+              confirmingDelete
+                ? "bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                : "bg-destructive/10 text-destructive hover:bg-destructive/20"
+            } ${deletePending ? "opacity-50" : ""}`}
+          >
+            <TrashIcon />
+          </button>
         </div>
       </header>
       {confirmingLeave && (
         <p className="mb-3 rounded-xl bg-destructive/10 px-4 py-2 text-xs text-destructive animate-fade-in">
           Tienes cambios sin guardar. Toca de nuevo para descartarlos.
+        </p>
+      )}
+      {confirmingDelete && !deletePending && (
+        <p className="mb-3 rounded-xl bg-destructive/10 px-4 py-2 text-xs text-destructive animate-fade-in">
+          Toca de nuevo la papelera para eliminar esta prenda. Se cancela en 3
+          segundos.
         </p>
       )}
       {(pending || deletePending) && <SaveOverlay label={deletePending ? "Eliminando…" : "Guardando…"} />}
@@ -438,29 +464,6 @@ export function GarmentDetail({
               Cancelar cambios
             </button>
           </div>
-
-          {/* Eliminar */}
-          <button
-            type="button"
-            onClick={handleDeleteClick}
-            disabled={deletePending}
-            className={`h-11 w-full rounded-xl text-sm font-medium transition-colors ${
-              confirmingDelete
-                ? "bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                : "bg-destructive/10 text-destructive hover:bg-destructive/20"
-            } ${deletePending ? "opacity-50" : ""}`}
-          >
-            {deletePending
-              ? "Eliminando…"
-              : confirmingDelete
-                ? "Confirmar eliminación"
-                : "Eliminar prenda"}
-          </button>
-          {confirmingDelete && !deletePending && (
-            <p className="text-center text-xs text-muted-foreground animate-fade-in">
-              Toca de nuevo para confirmar. Se cancela en 3 segundos.
-            </p>
-          )}
         </div>
       </form>
     </section>
@@ -500,6 +503,25 @@ function ChevronIcon({ dir }: { dir: "left" | "right" }) {
       ) : (
         <path d="M9 18l6-6-6-6" />
       )}
+    </svg>
+  );
+}
+
+function TrashIcon() {
+  return (
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2m2 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" />
+      <path d="M10 11v6M14 11v6" />
     </svg>
   );
 }
