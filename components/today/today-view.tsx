@@ -180,11 +180,12 @@ export function TodayView({
         </Link>
       )}
 
-      {/* Ocasión — compacto, tamaño fijo (4 líneas) */}
-      <div className="mb-4 shrink-0">
+      {/* Ocasión — en mobile queda compacto (3 líneas); en PC se expande
+          para llenar el alto disponible y no dejar espacio en blanco. */}
+      <div className="mb-4 shrink-0 lg:flex lg:min-h-0 lg:flex-1 lg:flex-col">
         <label
           htmlFor="occasion"
-          className="mb-2 block text-sm font-semibold text-foreground"
+          className="mb-2 block shrink-0 text-sm font-semibold text-foreground"
         >
           ¿Qué vas a hacer hoy?
         </label>
@@ -195,9 +196,9 @@ export function TodayView({
           maxLength={300}
           rows={3}
           placeholder="Ej: Reunión con cliente por la mañana y salida casual por la tarde"
-          className="custom-scroll w-full resize-none rounded-2xl bg-accent/8 px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:bg-accent/12"
+          className="custom-scroll w-full resize-none rounded-2xl bg-accent/8 px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:bg-accent/12 lg:min-h-0 lg:flex-1"
         />
-        <p className="mt-1 text-xs text-muted-foreground">
+        <p className="mt-1 shrink-0 text-xs text-muted-foreground">
           {occasion.length}/300 · La IA usará esto para sugerir tu outfit.
         </p>
       </div>
@@ -324,68 +325,54 @@ function WeatherIcon({
   isDay: boolean;
   size?: number;
 }) {
-  const stroke = "var(--color-accent)";
+  // Iconos de marca (PNG) para los estados comunes. La luna (noche despejada)
+  // y la nieve se quedan en SVG porque no hay PNG para esos casos.
+  let src: string | null = null;
+  if (code === 0) src = isDay ? "/icons/weather-sunny.png" : null;
+  else if (code === 1 || code === 2) src = "/icons/weather-sunny.png";
+  else if (code === 3 || code === 45 || code === 48) src = "/icons/weather-cloudy.png";
+  else if ((code != null && code >= 51 && code <= 67) || (code != null && code >= 80 && code <= 82))
+    src = "/icons/weather-rain.png";
+  else if (code != null && code >= 95) src = "/icons/weather-storm.png";
+
+  if (src) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        src={src}
+        alt=""
+        width={size}
+        height={size}
+        style={{ width: size, height: size, objectFit: "contain" }}
+        aria-hidden
+      />
+    );
+  }
+
+  // Fallbacks SVG: luna (noche despejada), nieve, o desconocido.
   const common = {
     width: size,
     height: size,
     viewBox: "0 0 24 24",
     fill: "none",
-    stroke,
+    stroke: "var(--color-accent)",
     strokeWidth: 1.5,
     strokeLinecap: "round" as const,
     strokeLinejoin: "round" as const,
     "aria-hidden": true,
   };
-
-  if (code == null) return <svg {...common} />;
-
-  if (code === 0) {
-    return isDay ? (
-      <svg {...common}>
-        <circle cx="12" cy="12" r="4" />
-        <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" />
-      </svg>
-    ) : (
+  if (code === 0 && !isDay) {
+    return (
       <svg {...common}>
         <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
       </svg>
     );
   }
-  if (code === 1 || code === 2) {
-    return (
-      <svg {...common}>
-        <circle cx="8" cy="9" r="3" />
-        <path d="M20 17a4 4 0 0 0-7.79-1.3A3.5 3.5 0 0 0 8 18.5h9a3 3 0 0 0 3-1.5z" />
-      </svg>
-    );
-  }
-  if (code === 3 || code === 45 || code === 48) {
-    return (
-      <svg {...common}>
-        <path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z" />
-      </svg>
-    );
-  }
-  if ((code >= 51 && code <= 67) || (code >= 80 && code <= 82)) {
-    return (
-      <svg {...common}>
-        <path d="M16 13v6M8 13v6M12 15v6M19 6.07A6 6 0 0 0 8.04 5.5 5.5 5.5 0 0 0 4 13" />
-      </svg>
-    );
-  }
-  if (code >= 71 && code <= 77) {
+  if (code != null && code >= 71 && code <= 77) {
     return (
       <svg {...common}>
         <path d="M20 17.58A5 5 0 0 0 18 8h-1.26A8 8 0 1 0 4 16.25" />
         <path d="M8 16h.01M8 20h.01M12 18h.01M12 22h.01M16 16h.01M16 20h.01" />
-      </svg>
-    );
-  }
-  if (code >= 95) {
-    return (
-      <svg {...common}>
-        <path d="M19 16.9A5 5 0 0 0 18 7h-1.26a8 8 0 1 0-11.62 9" />
-        <polyline points="13 11 9 17 15 17 11 23" />
       </svg>
     );
   }

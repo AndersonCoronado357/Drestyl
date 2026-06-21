@@ -561,7 +561,10 @@ function ActionCard({
           isCamera ? "text-primary-foreground" : "text-accent"
         }`}
       >
-        <span className="lg:scale-[4]">{icon}</span>
+        {/* En la tarjeta de cámara (fondo morado) el PNG va en blanco. */}
+        <span className={`lg:scale-[4] ${isCamera ? "[&_img]:brightness-0 [&_img]:invert" : ""}`}>
+          {icon}
+        </span>
       </span>
       <div className="min-w-0 flex-1">
         <p className="text-base font-semibold">{title}</p>
@@ -1138,39 +1141,28 @@ function RecoverIcon() {
 
 function CameraIcon() {
   return (
-    <svg
-      viewBox="0 0 24 24"
-      width="20"
-      height="20"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={1.8}
-      strokeLinecap="round"
-      strokeLinejoin="round"
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src="/icons/camera.png"
+      alt=""
+      width={28}
+      height={28}
+      style={{ width: 28, height: 28, objectFit: "contain" }}
       aria-hidden="true"
-    >
-      <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
-      <circle cx="12" cy="13" r="4" />
-    </svg>
+    />
   );
 }
 
 function GalleryIcon() {
   return (
-    <svg
-      viewBox="0 0 24 24"
-      width="20"
-      height="20"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={1.8}
-      strokeLinecap="round"
-      strokeLinejoin="round"
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src="/icons/upload.png"
+      alt=""
+      width={28}
+      height={28}
+      style={{ width: 28, height: 28, objectFit: "contain" }}
       aria-hidden="true"
-    >
-      <rect x="3" y="3" width="18" height="18" rx="2" />
-      <circle cx="8.5" cy="8.5" r="1.5" />
-      <path d="m21 15-5-5L5 21" />
-    </svg>
+    />
   );
 }

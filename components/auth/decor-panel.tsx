@@ -89,20 +89,17 @@ export function DecorPanel({ mode }: { mode: Mode }) {
       {/* Contenido central — re-monta al cambiar mode para reanimar */}
       <div key={mode} className="relative z-10 mx-auto max-w-md text-center">
         <div
-          className="mx-auto mb-8 flex size-20 animate-fade-up items-center justify-center rounded-2xl bg-accent-foreground/15"
+          className="mx-auto mb-8 flex animate-fade-up items-center justify-center"
           style={{ animationDelay: "100ms" }}
         >
-          <svg
-            viewBox="0 0 24 24"
-            className="size-10"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth={1.6}
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <path d="M20.38 3.46 16 2a4 4 0 0 1-8 0L3.62 3.46a2 2 0 0 0-1.34 2.23l.58 3.47a1 1 0 0 0 .99.84H6v7a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V10h2.15a1 1 0 0 0 .99-.84l.58-3.47a2 2 0 0 0-1.34-2.23Z" />
-          </svg>
+          {/* Logo D-camiseta grande, sin recuadro, en blanco sobre el morado */}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/icons/logo.png"
+            alt=""
+            className="h-32 w-auto brightness-0 invert"
+            aria-hidden
+          />
         </div>
 
         <p
@@ -121,13 +118,18 @@ export function DecorPanel({ mode }: { mode: Mode }) {
         </p>
       </div>
 
-      {/* Marca abajo */}
-      <p
-        className="absolute bottom-8 left-12 z-10 animate-fade-up text-sm font-bold tracking-tight"
+      {/* Marca abajo — logo en blanco sobre el panel morado */}
+      <div
+        className="absolute bottom-8 left-12 z-10 animate-fade-up"
         style={{ animationDelay: "400ms" }}
       >
-        Drestyl
-      </p>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/icons/logo-text.png"
+          alt="Drestyl"
+          className="h-7 w-auto brightness-0 invert"
+        />
+      </div>
     </div>
   );
 }

@@ -174,7 +174,7 @@ function CategoryButton({
       className="group flex items-center gap-3 rounded-2xl bg-accent/8 p-3 text-left transition-colors duration-300 hover:bg-accent/12 disabled:cursor-not-allowed disabled:bg-muted/30 disabled:hover:bg-muted/30 lg:gap-5 lg:p-4"
     >
       {/* Icono SOLO — sin container. SVG grande, color lila directo. */}
-      <span className="flex aspect-square h-10 shrink-0 items-center justify-center text-accent transition-colors group-disabled:text-muted-foreground lg:h-[calc(100%-0.5rem)]">
+      <span className="flex aspect-square h-10 shrink-0 items-center justify-center text-accent transition-all group-disabled:text-muted-foreground group-disabled:opacity-40 lg:h-[calc(100%-0.5rem)]">
         <span className="lg:scale-[4]">{children}</span>
       </span>
 
@@ -193,7 +193,7 @@ function CategoryButton({
             {count}
           </span>
         </div>
-        <p className="hidden truncate text-xs text-muted-foreground group-disabled:text-muted-foreground/70 lg:block">
+        <p className="truncate text-xs text-muted-foreground group-disabled:text-muted-foreground/70">
           {hint}
         </p>
         <span
@@ -241,21 +241,14 @@ function DetailBody({
 
 function AllIcon() {
   return (
-    <svg
-      width="28"
-      height="28"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={1.6}
-      strokeLinecap="round"
-      strokeLinejoin="round"
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src="/icons/cat-all.png"
+      alt=""
+      width={28}
+      height={28}
+      style={{ width: 28, height: 28, objectFit: "contain" }}
       aria-hidden
-    >
-      <rect x="3" y="3" width="7" height="7" rx="1.5" />
-      <rect x="14" y="3" width="7" height="7" rx="1.5" />
-      <rect x="3" y="14" width="7" height="7" rx="1.5" />
-      <rect x="14" y="14" width="7" height="7" rx="1.5" />
-    </svg>
+    />
   );
 }
