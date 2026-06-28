@@ -78,34 +78,62 @@ export async function POST(request: NextRequest) {
 
   try {
     const tGemini = Date.now();
+    const reqBody = JSON.stringify({
+      contents: [{ parts }],
+      // Generoso para batch: 50 tokens por prenda × 30 max + buffer.
+      generationConfig: { temperature: 0.3, maxOutputTokens: 2500 },
+    });
+    // Modelos en orden: lite (rápido/barato) primero; si está sobrecargado
+    // (503) o falla, cae a modelos con más capacidad. 429 (cuota) = otra key.
+    const MODELS = [
+      "gemini-2.5-flash-lite",
+      "gemini-2.0-flash",
+      "gemini-2.5-flash",
+    ];
     let response: Response | null = null;
-    for (let i = 0; i < apiKeys.length; i++) {
-      const ac = new AbortController();
-      const timeoutId = setTimeout(() => ac.abort(), 25000);
-      response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${apiKeys[i]}`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          signal: ac.signal,
-          body: JSON.stringify({
-            contents: [{ parts }],
-            generationConfig: {
-              temperature: 0.3,
-              // Generoso para batch: 50 tokens por prenda × 30 max + buffer.
-              maxOutputTokens: 2500,
+    let usedModel = "";
+    for (const model of MODELS) {
+      for (let i = 0; i < apiKeys.length; i++) {
+        const ac = new AbortController();
+        const timeoutId = setTimeout(() => ac.abort(), 25000);
+        try {
+          response = await fetch(
+            `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKeys[i]}`,
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              signal: ac.signal,
+              body: reqBody,
             },
-          }),
-        },
-      ).finally(() => clearTimeout(timeoutId));
-      if (response.status !== 429) break;
-      console.warn(
-        `[suggest-category] key #${i + 1}/${apiKeys.length} agotada, siguiente...`,
-      );
+          ).finally(() => clearTimeout(timeoutId));
+        } catch (e) {
+          console.warn(`[suggest-category] ${model} key#${i + 1} fetch fail:`, e);
+          response = null;
+          continue; // red/timeout → siguiente key
+        }
+        usedModel = model;
+        if (response.ok) break;
+        if (response.status === 429) {
+          console.warn(`[suggest-category] ${model} key #${i + 1} cuota, siguiente key...`);
+          continue; // cuota es por key → probar otra key
+        }
+        // 503/500 (sobrecarga) u otro: no insistir con más keys del mismo modelo
+        console.warn(`[suggest-category] ${model} status ${response.status}, siguiente modelo...`);
+        break;
+      }
+      if (response?.ok) break;
+      // Si el último error NO fue transitorio (429/503/500), no probar más modelos.
+      if (
+        response &&
+        response.status !== 429 &&
+        response.status !== 503 &&
+        response.status !== 500
+      )
+        break;
     }
     if (!response) throw new Error("no response received");
     console.log(
-      `[suggest-category] gemini ${Date.now() - tGemini}ms, status ${response.status}`,
+      `[suggest-category] gemini(${usedModel}) ${Date.now() - tGemini}ms, status ${response.status}`,
     );
 
     if (!response.ok) {
