@@ -9,7 +9,7 @@ import { withUser } from "./db";
 
 type SbError = { message: string } | null;
 /* eslint-disable @typescript-eslint/no-explicit-any */
-type Result<T = any> = { data: T; error: SbError };
+type Result<T = any> = { data: T; error: SbError; count?: number | null };
 
 function ident(s: string): string {
   if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(String(s))) throw new Error("identificador inválido: " + s);
@@ -41,6 +41,8 @@ class QueryBuilder<T = any> implements PromiseLike<Result<T>> {
   private orders: { col: string; asc: boolean }[] = [];
   private limitN: number | null = null;
   private single = false;
+  private countMode: string | null = null;
+  private headOnly = false;
 
   constructor(
     private uid: string | null,
@@ -49,8 +51,13 @@ class QueryBuilder<T = any> implements PromiseLike<Result<T>> {
     ident(table);
   }
 
-  select(cols = "*") {
+  select(
+    cols = "*",
+    opts?: { count?: "exact" | "planned" | "estimated"; head?: boolean },
+  ) {
     if (this.mode === "select") this.cols = cols || "*";
+    if (opts?.count) this.countMode = opts.count;
+    if (opts?.head) this.headOnly = true;
     return this;
   }
   insert(payload: Record<string, unknown> | Record<string, unknown>[]) {
@@ -155,11 +162,30 @@ class QueryBuilder<T = any> implements PromiseLike<Result<T>> {
 
   async run(): Promise<Result<T>> {
     try {
+      // count: 'exact' → corre un count(*) con los MISMOS filtros (Supabase lo
+      // devuelve en `count`). head: true → solo el count, sin traer filas.
+      let count: number | null = null;
+      if (this.mode === "select" && this.countMode) {
+        const cparams: unknown[] = [];
+        const cwhere = this.buildWhere(cparams);
+        const crows = await withUser(this.uid, async (c) =>
+          (
+            await c.query(
+              `select count(*)::int as count from ${this.table}${cwhere}`,
+              cparams,
+            )
+          ).rows,
+        );
+        count = (crows[0] as { count?: number } | undefined)?.count ?? 0;
+        if (this.headOnly) {
+          return { data: (this.single ? null : []) as unknown as T, error: null, count };
+        }
+      }
       const { sql, params } = this.build();
       const rows = await withUser(this.uid, async (c) => (await c.query(sql, params)).rows);
       if (this.mode === "select") {
         const data = this.single ? ((rows[0] ?? null) as T) : (rows as unknown as T);
-        return { data, error: null };
+        return { data, error: null, count };
       }
       return { data: null as unknown as T, error: null };
     } catch (e) {
