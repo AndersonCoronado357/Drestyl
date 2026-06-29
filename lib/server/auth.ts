@@ -116,14 +116,15 @@ export async function sendResetEmail(email: string, token: string, origin: strin
 export function googleEnabled(): boolean {
   return !!(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET);
 }
-// Origen PÚBLICO fijo. Detrás de Caddy/Cloudflare, request.url puede llegar
-// como http://localhost:3000; por eso para OAuth y redirecciones usamos
-// ORIGIN (inyectado en el deploy = https://drestyl.acmsy.com), NO la request.
+// Origen PÚBLICO fijo. Para OAuth el redirect_uri DEBE ser idéntico en el
+// authorize y en el intercambio del code, así que AMBOS usan este valor, no el
+// de la request (detrás del proxy llega como localhost; en `next dev` como
+// 0.0.0.0 — y no coincidirían). En prod = ORIGIN (https://drestyl.acmsy.com).
+// En local sin ORIGIN = http://localhost:3000; para otro puerto define
+// ORIGIN=http://localhost:<puerto> en .env.local.
 export function publicOrigin(fallback?: string): string {
   return process.env.ORIGIN || process.env.APP_URL || fallback || "http://localhost:3000";
 }
-// El redirect_uri DEBE ser idéntico en el authorize y en el intercambio del
-// code; por eso ambos usan el origen público fijo (no el de la request).
 function googleRedirectUri(): string {
   return `${publicOrigin()}/auth/callback`;
 }
