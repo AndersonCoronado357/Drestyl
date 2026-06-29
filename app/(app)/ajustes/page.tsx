@@ -1,7 +1,9 @@
 import { redirect } from "next/navigation";
 import { getSessionUser } from "@/lib/supabase/server";
+import { getAvatarUrl } from "@/lib/server/photos";
 import { LogoutButton } from "@/components/auth/logout-button";
 import { GenderForm } from "@/components/settings/gender-form";
+import { ProfileHeader } from "@/components/settings/profile-header";
 import { RepeatWindowSlider } from "@/components/settings/repeat-window-slider";
 import { StylePreferencesField } from "@/components/settings/style-preferences-field";
 import { InstallButton } from "@/components/pwa/install-button";
@@ -42,23 +44,18 @@ export default async function AjustesPage() {
   // Inicial del nombre para el avatar — primera letra mayúscula.
   const initial = (displayName.trim()[0] ?? "?").toUpperCase();
 
+  // Foto de perfil (si la subió); null muestra la inicial.
+  const avatarUrl = await getAvatarUrl(user.id);
+
   return (
     <section className="flex min-h-0 flex-1 flex-col overflow-y-auto pt-8">
-      {/* Header con avatar + datos del usuario */}
-      <header className="mb-8 shrink-0 flex items-center gap-4">
-        <div className="grid size-16 shrink-0 place-items-center rounded-full bg-accent text-2xl font-semibold text-accent-foreground">
-          {initial}
-        </div>
-        <div className="min-w-0 flex-1">
-          <p className="text-xs uppercase tracking-wider text-muted-foreground">
-            Tu cuenta
-          </p>
-          <h1 className="mt-0.5 truncate text-2xl font-semibold tracking-tight">
-            {displayName}
-          </h1>
-          <p className="truncate text-sm text-muted-foreground">{user.email}</p>
-        </div>
-      </header>
+      {/* Header con avatar + nombre editables in situ */}
+      <ProfileHeader
+        initialName={displayName}
+        avatarUrl={avatarUrl}
+        email={user.email ?? ""}
+        initial={initial}
+      />
 
       {/* Sección: Preferencias para la IA */}
       <SectionTitle>Cómo te ayudo</SectionTitle>

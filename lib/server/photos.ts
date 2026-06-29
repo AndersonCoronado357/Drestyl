@@ -65,3 +65,23 @@ export async function getPhotoFromDb(
   const r = rows[0];
   return r ? { data: r.data, contentType: r.content_type } : null;
 }
+
+// Clave fija del avatar del usuario (reusa la tabla garment_photos).
+export function avatarKey(userId: string): string {
+  return `user-${userId}/avatar/photo`;
+}
+
+// URL firmada del avatar (o null si no tiene). Usa updated_at como versión para
+// que al cambiar la foto la URL cambie y el navegador no muestre la cacheada.
+export async function getAvatarUrl(userId: string): Promise<string | null> {
+  try {
+    const rows = await query<{ updated_at: unknown }>(
+      "select updated_at from garment_photos where path = $1 limit 1",
+      [avatarKey(userId)],
+    );
+    if (!rows[0]) return null;
+    return signedPhotoUrl(userId, "avatar/photo", String(rows[0].updated_at ?? ""));
+  } catch {
+    return null;
+  }
+}
