@@ -180,9 +180,9 @@ export function TodayView({
         </Link>
       )}
 
-      {/* Ocasión — en mobile queda compacto (3 líneas); en PC se expande
-          para llenar el alto disponible y no dejar espacio en blanco. */}
-      <div className="mb-4 shrink-0 lg:flex lg:min-h-0 lg:flex-1 lg:flex-col">
+      {/* Ocasión — se expande (flex-1) para llenar el alto disponible en
+          móvil y PC, sin dejar un hueco entre el textarea y el botón. */}
+      <div className="mb-4 flex min-h-0 flex-1 flex-col">
         <label
           htmlFor="occasion"
           className="mb-2 block shrink-0 text-sm font-semibold text-foreground"
@@ -196,7 +196,7 @@ export function TodayView({
           maxLength={300}
           rows={3}
           placeholder="Ej: Reunión con cliente por la mañana y salida casual por la tarde"
-          className="custom-scroll w-full resize-none rounded-2xl bg-accent/8 px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:bg-accent/12 lg:min-h-0 lg:flex-1"
+          className="custom-scroll w-full flex-1 resize-none rounded-2xl bg-accent/8 px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:bg-accent/12 min-h-0"
         />
         <p className="mt-1 shrink-0 text-xs text-muted-foreground">
           {occasion.length}/300 · La IA usará esto para sugerir tu outfit.
@@ -212,7 +212,7 @@ export function TodayView({
             sessionStorage.removeItem("drestyl:occasion");
           }
         }}
-        className="h-14 shrink-0 w-full inline-flex items-center justify-center rounded-2xl bg-primary text-base font-semibold text-primary-foreground transition-transform active:scale-[0.99]"
+        className="mb-4 h-14 shrink-0 w-full inline-flex items-center justify-center rounded-2xl bg-primary text-base font-semibold text-primary-foreground transition-transform active:scale-[0.99]"
       >
         Sugerir outfit
       </Link>
