@@ -117,7 +117,7 @@ export function TodayView({
   });
 
   return (
-    <section className="flex min-h-0 flex-1 flex-col overflow-y-auto pt-6 lg:pt-10 animate-fade-in">
+    <section className="flex min-h-0 flex-1 flex-col overflow-hidden pt-6 lg:pt-10 animate-fade-in">
       <header className="mb-5 shrink-0">
         <p className="text-sm text-muted-foreground capitalize">{dateLabel}</p>
         <h1 className="mt-1 truncate text-3xl font-semibold tracking-tight lg:text-4xl">
