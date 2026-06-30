@@ -18,17 +18,16 @@ export const metadata: Metadata = {
     capable: true,
     title: "Drestyl",
     statusBarStyle: "default",
-    startupImage: ["/icons/apple-touch-icon.png"],
+    startupImage: ["/icons/apple-touch-icon.png?v=3"],
   },
   formatDetection: {
     telephone: false,
   },
   icons: {
-    icon: [
-      { url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
-      { url: "/icons/icon-512.png", sizes: "512x512", type: "image/png" },
-    ],
-    apple: "/icons/apple-touch-icon.png",
+    // Favicon de la pestaña: solo el D morada sobre fondo transparente.
+    // (?v=N fuerza recarga del icono en navegadores que lo cachean fuerte.)
+    icon: [{ url: "/icons/favicon.png?v=3", type: "image/png" }],
+    apple: "/icons/apple-touch-icon.png?v=3",
   },
 };
 
@@ -63,7 +62,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="es" className={inter.variable}>
-      <body className="min-h-full bg-background text-foreground font-sans">
+      <body
+        className="min-h-full bg-background text-foreground font-sans"
+        suppressHydrationWarning
+      >
         {children}
         <Script id="sw-register" strategy="afterInteractive">
           {SW_REGISTER}

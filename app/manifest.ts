@@ -16,11 +16,11 @@ export default function manifest(): MetadataRoute.Manifest {
       "Tu clóset y tu outfit del día, armado con IA según el clima.",
     start_url: "/",
     scope: "/",
-    // "browser" en vez de "standalone": al "instalar" desde el browser,
-    // crea un acceso directo que abre la app como una pestaña normal,
-    // NO como ventana standalone separada. Evita que el layout se vea
-    // diferente cuando está "instalada".
-    display: "browser",
+    // "standalone": al agregar a la pantalla de inicio se abre como una app
+    // (sin barra del navegador), como Splitmate. El layout ya maneja el área
+    // segura del aparato (viewportFit "cover" + pb-safe en la barra inferior),
+    // así que no se rompe con el notch ni la barra del home.
+    display: "standalone",
     orientation: "portrait",
     background_color: "#FAFAFA",
     theme_color: "#FAFAFA",
@@ -29,25 +29,25 @@ export default function manifest(): MetadataRoute.Manifest {
     categories: ["lifestyle", "personalization", "utilities"],
     icons: [
       {
-        src: "/icons/icon-192.png",
+        src: "/icons/icon-192.png?v=3",
         sizes: "192x192",
         type: "image/png",
         purpose: "any",
       },
       {
-        src: "/icons/icon-512.png",
+        src: "/icons/icon-512.png?v=3",
         sizes: "512x512",
         type: "image/png",
         purpose: "any",
       },
       {
-        src: "/icons/icon-maskable-192.png",
+        src: "/icons/icon-maskable-192.png?v=3",
         sizes: "192x192",
         type: "image/png",
         purpose: "maskable",
       },
       {
-        src: "/icons/icon-maskable-512.png",
+        src: "/icons/icon-maskable-512.png?v=3",
         sizes: "512x512",
         type: "image/png",
         purpose: "maskable",
