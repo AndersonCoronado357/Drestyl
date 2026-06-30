@@ -30,7 +30,7 @@ export default async function AppLayout({
   // iPhone home indicator. Sin el calc(), en iPhones el contenido bajo
   // quedaba tapado por el nav fixed.
   return (
-    <div className="flex h-dvh flex-col">
+    <div className="flex h-svh flex-col">
       <main
         className="flex w-full flex-1 flex-col overflow-hidden px-5 pt-safe md:px-8 lg:px-12"
         style={{

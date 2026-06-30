@@ -187,6 +187,11 @@
 html,
 body {
   height: 100%;
+  /* App shell: el body NUNCA scrollea. La raíz usa h-svh y cada vista que
+     necesita scroll lo hace internamente (overflow-y-auto). Esto evita el
+     scroll de toda la página en la PWA instalada (standalone). */
+  overflow: hidden;
+  overscroll-behavior: none;
   background-color: var(--color-background);
   color: var(--color-foreground);
 }
